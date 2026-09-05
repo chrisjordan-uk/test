@@ -109,6 +109,100 @@ Key ones:
   to create the first Admin account.
 - `CORS_ORIGIN` — set to your frontend's origin in production.
 
+## Deploying to shared hosting (cPanel)
+
+This assumes a cPanel host with **"Setup Node.js App"** (Phusion Passenger /
+CloudLinux NodeJS Selector) and **MySQL Databases** — most Bulgarian hosts
+(SuperHosting, Hosting.bg, etc.) have both on their business plans. Layout:
+the main domain serves the static frontend, a subdomain runs the Node API.
+
+### 1. Check Node support & pick a layout
+
+In cPanel, look for an icon called **"Setup Node.js App"**. If it's not
+there, this plan can't run the backend — you'd need a VPS or a platform like
+Railway/Render for the API instead (the frontend can still go on the same
+shared hosting as static files).
+
+Decide on:
+- `yourdomain.com` → frontend (static files)
+- `api.yourdomain.com` → backend (Node app) — create this subdomain first
+  under **Domains → Create A New Domain**
+
+### 2. Create the database
+
+**MySQL Databases** in cPanel:
+1. Create a database, e.g. `vinted_resell` (cPanel will prefix it, e.g.
+   `cpaneluser_vinted_resell`).
+2. Create a database user + password (also prefixed, e.g.
+   `cpaneluser_vinted`).
+3. Add that user to the database with **All Privileges**.
+
+Load the schema via **phpMyAdmin**: open the new database → **Import** tab →
+choose `backend/db/schema.sql` from this repo → Go.
+
+### 3. Upload and configure the backend
+
+1. Upload the `backend/` folder somewhere **outside** `public_html` (e.g.
+   `/home/cpaneluser/vinted-api`) — via File Manager (zip it, upload, extract)
+   or `git clone` if you have SSH/Terminal access. Skip `node_modules` and
+   `.env` — you'll create those next.
+2. **Setup Node.js App** → Create Application:
+   - Node.js version: 18.x or newer
+   - Application mode: Production
+   - Application root: the folder from step 1 (e.g. `vinted-api`)
+   - Application URL: `api.yourdomain.com`
+   - Application startup file: `server.js`
+3. In the same screen, add **Environment Variables** (this replaces the
+   `.env` file — no need to upload one):
+   - `DB_HOST=localhost`
+   - `DB_PORT=3306`
+   - `DB_USER=cpaneluser_vinted` (your real prefixed DB user)
+   - `DB_PASSWORD=...`
+   - `DB_NAME=cpaneluser_vinted_resell` (your real prefixed DB name)
+   - `JWT_SECRET=` a long random string (generate one with
+     `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`)
+   - `JWT_EXPIRES_IN=8h`
+   - `CORS_ORIGIN=https://yourdomain.com`
+   - `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_EMAIL` — only
+     needed for the one-time seed step below.
+4. Click **Run NPM Install** in the same screen (installs `package.json`
+   dependencies inside the app's virtual environment).
+5. Run the seed script once, using the "Enter to virtual environment"
+   command cPanel shows you (via **Terminal** in cPanel, or SSH), e.g.:
+   ```bash
+   source /home/cpaneluser/nodevenv/vinted-api/18/bin/activate
+   cd /home/cpaneluser/vinted-api
+   npm run seed
+   ```
+   This prints the admin login it created.
+6. Click **Restart** on the Node app. Test it:
+   `https://api.yourdomain.com/api/health` should return `{"ok":true}`.
+
+### 4. Build and upload the frontend
+
+Build it **locally** (on your own computer), pointing it at the live API:
+
+```bash
+cd frontend
+echo "VITE_API_URL=https://api.yourdomain.com/api" > .env
+npm install
+npm run build
+```
+
+Upload everything **inside** `frontend/dist/` (not the folder itself) to
+`public_html` for `yourdomain.com`, via File Manager or FTP. The included
+`.htaccess` (copied into `dist/` automatically) makes page refreshes on
+routes like `/products` work correctly.
+
+### 5. Enable HTTPS
+
+Under **SSL/TLS Status** or **AutoSSL**, issue a free Let's Encrypt
+certificate for both `yourdomain.com` and `api.yourdomain.com`. Once both
+have valid HTTPS, everything above (CORS_ORIGIN, VITE_API_URL) already uses
+`https://`, so no further changes are needed.
+
+Log in, change the seeded admin password from the app, and you're live.
+
 ## Notes on the data model
 
 - Every product automatically gets a matching "purchase" entry in the
