@@ -25,7 +25,9 @@ includes/            Shared layout + helper functions
    (cPanel's "MySQL Databases", Hostinger's hPanel "Databases", etc.) and
    note the database name, username and password it gives you.
 2. **Import the schema.** Open phpMyAdmin → select your database →
-   **Import** tab → choose `db/database.sql` → Go.
+   **Import** tab → choose `db/database.sql` → Go. (Already set this up
+   before? Run the file in `db/migrations/` instead — it just adds what's
+   new without touching your data.)
 3. **Upload this whole `php-app` folder** to your hosting (as the contents
    of `public_html`, or a subfolder if you want the app at
    `yoursite.com/shop/`) via File Manager or FTP.
@@ -40,6 +42,23 @@ includes/            Shared layout + helper functions
 
 Then log in at `login.php` with the admin account and change its password
 from the Users page.
+
+## Business features
+
+- **Currency:** everything is priced in British pounds (£).
+- **Aging stock alert** on Home: any item sitting in stock for 30+ days
+  without selling is called out, with an "awaiting shipment" banner too
+  when items are marked *To Ship*.
+- **Margin & days-in-stock columns** on Inventory: at-a-glance profit % per
+  item and how long it's been held (or took to sell).
+- **CSV export** on Inventory and Profit, for bookkeeping/backup — respects
+  whatever filters are active on Inventory.
+- **Expense categories** (Shipping, Packaging, Platform fees, Supplies,
+  Other, or your own) on manual Profit entries, with a spend-by-category
+  breakdown on the Profit page.
+- **Sales performance stats** on Profit: items sold, average sale price,
+  average margin, average days to sell — computed straight from your sold
+  products.
 
 ## Notes
 

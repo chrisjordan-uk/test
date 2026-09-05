@@ -3,7 +3,7 @@ require __DIR__ . '/config.php';
 requirePermission('profit', 'manage');
 
 $errors = [];
-$form = ['type' => 'purchase', 'description' => '', 'amount' => '', 'quantity' => 1, 'transaction_date' => date('Y-m-d')];
+$form = ['type' => 'purchase', 'description' => '', 'amount' => '', 'quantity' => 1, 'transaction_date' => date('Y-m-d'), 'category' => ''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $form = [
@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'amount' => $_POST['amount'] ?? '',
         'quantity' => $_POST['quantity'] ?? 1,
         'transaction_date' => $_POST['transaction_date'] ?? '',
+        'category' => trim($_POST['category'] ?? ''),
     ];
 
     if (!in_array($form['type'], ['purchase', 'sale', 'expense'], true)) {
@@ -29,10 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         $pdo->prepare(
-            'INSERT INTO transactions (type, description, amount, quantity, transaction_date, created_by)
-             VALUES (?, ?, ?, ?, ?, ?)'
+            'INSERT INTO transactions (type, category, description, amount, quantity, transaction_date, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         )->execute([
-            $form['type'], $form['description'], $form['amount'],
+            $form['type'], $form['category'] ?: null, $form['description'], $form['amount'],
             (int) ($form['quantity'] ?: 1), $form['transaction_date'], currentUser()['id'],
         ]);
         flash('success', 'Entry added.');
@@ -67,7 +68,7 @@ require __DIR__ . '/includes/header.php';
   </div>
   <div class="grid grid-cols-2 gap-4">
     <div>
-      <label class="<?= LABEL ?>">Amount per unit ($)</label>
+      <label class="<?= LABEL ?>">Amount per unit (£)</label>
       <input type="number" min="0" step="0.01" name="amount" class="<?= INPUT ?>" value="<?= e((string) $form['amount']) ?>" required>
     </div>
     <div>
@@ -78,6 +79,13 @@ require __DIR__ . '/includes/header.php';
   <div>
     <label class="<?= LABEL ?>">Date</label>
     <input type="date" name="transaction_date" class="<?= INPUT ?>" value="<?= e($form['transaction_date']) ?>" required>
+  </div>
+  <div>
+    <label class="<?= LABEL ?>">Category <span class="normal-case font-normal text-slate-400">(optional, mostly useful for expenses)</span></label>
+    <input name="category" list="category-options" class="<?= INPUT ?>" value="<?= e($form['category']) ?>" placeholder="e.g. Shipping">
+    <datalist id="category-options">
+      <?php foreach (EXPENSE_CATEGORIES as $c): ?><option value="<?= e($c) ?>"><?php endforeach; ?>
+    </datalist>
   </div>
 
   <div class="flex justify-end gap-2">

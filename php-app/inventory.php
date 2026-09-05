@@ -30,6 +30,7 @@ $products = $stmt->fetchAll();
 $brands = $pdo->query("SELECT DISTINCT brand FROM products WHERE brand IS NOT NULL AND brand <> '' ORDER BY brand")->fetchAll(PDO::FETCH_COLUMN);
 
 $totalValue = array_sum(array_column($products, 'bought_price'));
+$exportQuery = http_build_query(['q' => $search, 'status' => $statusFilter, 'brand' => $brandFilter]);
 
 $pageTitle = 'Inventory';
 require __DIR__ . '/includes/header.php';
@@ -41,22 +42,25 @@ require __DIR__ . '/includes/header.php';
     <p class="mt-1 text-sm text-slate-500"><?= count($products) ?> products · <?= money($totalValue) ?> in cost</p>
   </div>
 
-  <form method="get" class="flex flex-wrap items-center gap-2">
-    <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search name, brand, SKU…" class="<?= INPUT ?> w-56">
-    <select name="status" class="<?= INPUT ?> w-40" onchange="this.form.submit()">
-      <option value="">All statuses</option>
-      <?php foreach (STATUSES as $key => $meta): ?>
-        <option value="<?= e($key) ?>" <?= $statusFilter === $key ? 'selected' : '' ?>><?= e($meta['label']) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <select name="brand" class="<?= INPUT ?> w-40" onchange="this.form.submit()">
-      <option value="">All brands</option>
-      <?php foreach ($brands as $b): ?>
-        <option value="<?= e($b) ?>" <?= $brandFilter === $b ? 'selected' : '' ?>><?= e($b) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <button type="submit" class="<?= BTN_SECONDARY ?>">Filter</button>
-  </form>
+  <div class="flex flex-wrap items-center gap-2">
+    <form method="get" class="flex flex-wrap items-center gap-2">
+      <input type="text" name="q" value="<?= e($search) ?>" placeholder="Search name, brand, SKU…" class="<?= INPUT ?> w-56">
+      <select name="status" class="<?= INPUT ?> w-40" onchange="this.form.submit()">
+        <option value="">All statuses</option>
+        <?php foreach (STATUSES as $key => $meta): ?>
+          <option value="<?= e($key) ?>" <?= $statusFilter === $key ? 'selected' : '' ?>><?= e($meta['label']) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <select name="brand" class="<?= INPUT ?> w-40" onchange="this.form.submit()">
+        <option value="">All brands</option>
+        <?php foreach ($brands as $b): ?>
+          <option value="<?= e($b) ?>" <?= $brandFilter === $b ? 'selected' : '' ?>><?= e($b) ?></option>
+        <?php endforeach; ?>
+      </select>
+      <button type="submit" class="<?= BTN_SECONDARY ?>">Filter</button>
+    </form>
+    <a href="export_inventory.php?<?= e($exportQuery) ?>" class="<?= BTN_SECONDARY ?>">⬇ Export CSV</a>
+  </div>
 </div>
 
 <div class="<?= CARD ?> overflow-hidden">
@@ -72,11 +76,17 @@ require __DIR__ . '/includes/header.php';
           <th class="px-4 py-3">Status</th>
           <th class="px-4 py-3">Bought</th>
           <th class="px-4 py-3">Sold</th>
+          <th class="px-4 py-3">Margin</th>
+          <th class="px-4 py-3">Days</th>
           <th class="px-4 py-3">Purchased</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
-        <?php foreach ($products as $p): ?>
+        <?php foreach ($products as $p):
+          $margin = marginPercent($p['bought_price'], $p['sold_price']);
+          $days = daysBetween($p['purchase_date'], $p['sold_date'] ?: null);
+          $isHeld = !in_array($p['status'], ['sold', 'returned', 'rejected'], true);
+        ?>
           <tr class="hover:bg-slate-50">
             <td class="px-4 py-3 font-mono text-xs text-slate-500"><?= e($p['product_number']) ?></td>
             <td class="px-4 py-3 font-medium text-slate-800"><?= e($p['name']) ?></td>
@@ -86,11 +96,21 @@ require __DIR__ . '/includes/header.php';
             <td class="px-4 py-3"><?= statusBadge($p['status']) ?></td>
             <td class="px-4 py-3 text-slate-600"><?= money($p['bought_price']) ?></td>
             <td class="px-4 py-3 text-slate-600"><?= $p['sold_price'] !== null ? money($p['sold_price']) : '—' ?></td>
+            <td class="px-4 py-3">
+              <?php if ($margin !== null): ?>
+                <span class="font-medium <?= $margin >= 0 ? 'text-emerald-600' : 'text-red-600' ?>"><?= round($margin) ?>%</span>
+              <?php else: ?>
+                <span class="text-slate-400">—</span>
+              <?php endif; ?>
+            </td>
+            <td class="px-4 py-3 <?= $isHeld && $days !== null && $days > 45 ? 'font-medium text-amber-600' : 'text-slate-500' ?>">
+              <?= $days !== null ? $days . ($isHeld ? 'd in stock' : 'd to sell') : '—' ?>
+            </td>
             <td class="px-4 py-3 text-slate-500"><?= fmtDate($p['purchase_date']) ?></td>
           </tr>
         <?php endforeach; ?>
         <?php if (!$products): ?>
-          <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">No products match these filters.</td></tr>
+          <tr><td colspan="11" class="px-4 py-10 text-center text-slate-400">No products match these filters.</td></tr>
         <?php endif; ?>
       </tbody>
     </table>

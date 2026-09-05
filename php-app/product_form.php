@@ -169,11 +169,11 @@ require __DIR__ . '/includes/header.php';
   </div>
 
   <div>
-    <label class="<?= LABEL ?>">Bought for ($) *</label>
+    <label class="<?= LABEL ?>">Bought for (£) *</label>
     <input type="number" min="0" step="0.01" name="bought_price" class="<?= INPUT ?>" value="<?= e((string) $form['bought_price']) ?>" required>
   </div>
   <div>
-    <label class="<?= LABEL ?>">Sold for ($)</label>
+    <label class="<?= LABEL ?>">Sold for (£)</label>
     <input type="number" min="0" step="0.01" name="sold_price" class="<?= INPUT ?>" value="<?= e((string) ($form['sold_price'] ?? '')) ?>">
   </div>
 

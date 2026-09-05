@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   type              ENUM('purchase','sale','expense') NOT NULL,
   product_id        INT UNSIGNED DEFAULT NULL,
+  category          VARCHAR(50) DEFAULT NULL,
   description       VARCHAR(255) NOT NULL,
   amount            DECIMAL(10,2) NOT NULL,
   quantity          INT UNSIGNED NOT NULL DEFAULT 1,

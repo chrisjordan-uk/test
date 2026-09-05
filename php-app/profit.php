@@ -41,6 +41,23 @@ $totalRevenue = $totals['revenue'] ?? 0;
 $totalCost = ($totals['cost'] ?? 0) + ($totals['expenses'] ?? 0);
 $netProfit = $totalRevenue - $totalCost;
 
+// Sales performance, computed straight from sold products so it reflects
+// individual item economics rather than the ledger totals above.
+$perf = $pdo->query(
+    "SELECT COUNT(*) AS items_sold, AVG(sold_price) AS avg_sale_price,
+            AVG((sold_price - bought_price) / NULLIF(bought_price, 0) * 100) AS avg_margin,
+            AVG(DATEDIFF(sold_date, purchase_date)) AS avg_days_to_sell
+     FROM products
+     WHERE status = 'sold' AND sold_price IS NOT NULL"
+)->fetch();
+
+$expenseBreakdown = $pdo->query(
+    "SELECT COALESCE(NULLIF(category, ''), 'Uncategorised') AS category,
+            SUM(amount * quantity) AS total
+     FROM transactions WHERE type = 'expense'
+     GROUP BY category ORDER BY total DESC"
+)->fetchAll();
+
 $transactions = $pdo->query(
     'SELECT t.*, p.name AS product_name FROM transactions t
      LEFT JOIN products p ON p.id = t.product_id
@@ -66,9 +83,12 @@ require __DIR__ . '/includes/header.php';
     <h1 class="text-2xl font-bold text-slate-900">Profit</h1>
     <p class="mt-1 text-sm text-slate-500">Track stock purchases, sales and expenses — profit is calculated automatically.</p>
   </div>
-  <?php if ($canManage): ?>
-    <a href="transaction_form.php" class="<?= BTN_PRIMARY ?>">+ Add entry</a>
-  <?php endif; ?>
+  <div class="flex items-center gap-2">
+    <a href="export_profit.php" class="<?= BTN_SECONDARY ?>">⬇ Export CSV</a>
+    <?php if ($canManage): ?>
+      <a href="transaction_form.php" class="<?= BTN_PRIMARY ?>">+ Add entry</a>
+    <?php endif; ?>
+  </div>
 </div>
 
 <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -86,15 +106,51 @@ require __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<div class="<?= CARD ?> mb-6 p-5">
-  <div class="mb-4 flex items-center justify-between">
-    <h2 class="text-sm font-semibold text-slate-900">Profit over time</h2>
-    <div class="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
-      <a href="?group=month" class="rounded-md px-3 py-1 font-medium <?= $groupBy === 'month' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500' ?>">Monthly</a>
-      <a href="?group=year" class="rounded-md px-3 py-1 font-medium <?= $groupBy === 'year' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500' ?>">Yearly</a>
-    </div>
+<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="<?= CARD ?> p-5">
+    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Items sold</p>
+    <p class="mt-2 text-xl font-bold text-slate-900"><?= (int) $perf['items_sold'] ?></p>
   </div>
-  <canvas id="profitChart" height="90"></canvas>
+  <div class="<?= CARD ?> p-5">
+    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Avg. sale price</p>
+    <p class="mt-2 text-xl font-bold text-slate-900"><?= $perf['avg_sale_price'] !== null ? money($perf['avg_sale_price']) : '—' ?></p>
+  </div>
+  <div class="<?= CARD ?> p-5">
+    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Avg. margin</p>
+    <p class="mt-2 text-xl font-bold text-slate-900"><?= $perf['avg_margin'] !== null ? round($perf['avg_margin']) . '%' : '—' ?></p>
+  </div>
+  <div class="<?= CARD ?> p-5">
+    <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Avg. days to sell</p>
+    <p class="mt-2 text-xl font-bold text-slate-900"><?= $perf['avg_days_to_sell'] !== null ? round($perf['avg_days_to_sell']) : '—' ?></p>
+  </div>
+</div>
+
+<div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="<?= CARD ?> p-5 lg:col-span-2">
+    <div class="mb-4 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-slate-900">Profit over time</h2>
+      <div class="flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
+        <a href="?group=month" class="rounded-md px-3 py-1 font-medium <?= $groupBy === 'month' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500' ?>">Monthly</a>
+        <a href="?group=year" class="rounded-md px-3 py-1 font-medium <?= $groupBy === 'year' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500' ?>">Yearly</a>
+      </div>
+    </div>
+    <canvas id="profitChart" height="90"></canvas>
+  </div>
+
+  <div class="<?= CARD ?> p-5">
+    <h2 class="mb-4 text-sm font-semibold text-slate-900">Expenses by category</h2>
+    <?php if (!$expenseBreakdown): ?>
+      <p class="text-sm text-slate-400">No expenses logged yet.</p>
+    <?php endif; ?>
+    <ul class="space-y-3">
+      <?php foreach ($expenseBreakdown as $row): ?>
+        <li class="flex items-center justify-between text-sm">
+          <span class="text-slate-600"><?= e($row['category']) ?></span>
+          <span class="font-medium text-slate-800"><?= money($row['total']) ?></span>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
 </div>
 
 <div class="<?= CARD ?> overflow-hidden">
@@ -116,7 +172,12 @@ require __DIR__ . '/includes/header.php';
           <tr class="hover:bg-slate-50">
             <td class="px-4 py-3 text-slate-500"><?= fmtDate($t['transaction_date']) ?></td>
             <td class="px-4 py-3"><span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium <?= $meta['class'] ?>"><?= e($meta['label']) ?></span></td>
-            <td class="px-4 py-3 text-slate-700"><?= e($t['description']) ?></td>
+            <td class="px-4 py-3 text-slate-700">
+              <?= e($t['description']) ?>
+              <?php if ($t['category']): ?>
+                <span class="ml-1 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"><?= e($t['category']) ?></span>
+              <?php endif; ?>
+            </td>
             <td class="px-4 py-3 text-slate-600"><?= (int) $t['quantity'] ?></td>
             <td class="px-4 py-3 font-medium text-slate-800"><?= money($t['amount'] * $t['quantity']) ?></td>
             <?php if ($canManage): ?>

@@ -20,6 +20,10 @@ const STATUSES = [
 
 const CONDITIONS = ['New with tags', 'New without tags', 'Very good', 'Good', 'Satisfactory'];
 
+const MONEY_SYMBOL = '£';
+
+const EXPENSE_CATEGORIES = ['Shipping', 'Packaging', 'Platform fees', 'Supplies', 'Other'];
+
 const DEFAULT_ROLES = [
     [
         'name' => 'Admin',
@@ -53,7 +57,7 @@ function redirect(string $url): void
 
 function money($value): string
 {
-    return '$' . number_format((float) $value, 2);
+    return MONEY_SYMBOL . number_format((float) $value, 2);
 }
 
 function fmtDate(?string $value): string
@@ -62,6 +66,27 @@ function fmtDate(?string $value): string
         return '—';
     }
     return date('M j, Y', strtotime($value));
+}
+
+/** Whole days between two Y-m-d dates (defaults to today for $to). */
+function daysBetween(?string $from, ?string $to = null): ?int
+{
+    if (!$from) {
+        return null;
+    }
+    $start = new DateTime($from);
+    $end = $to ? new DateTime($to) : new DateTime('today');
+    return (int) $start->diff($end)->days;
+}
+
+/** Profit margin as a percentage of the bought price, or null if it can't be computed. */
+function marginPercent($boughtPrice, $soldPrice): ?float
+{
+    $boughtPrice = (float) $boughtPrice;
+    if ($soldPrice === null || $soldPrice === '' || $boughtPrice <= 0) {
+        return null;
+    }
+    return (((float) $soldPrice - $boughtPrice) / $boughtPrice) * 100;
 }
 
 function flash(string $key, ?string $message = null)

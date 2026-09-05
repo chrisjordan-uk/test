@@ -27,7 +27,20 @@ $user = currentUser();
     },
   };
 </script>
-<style>body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;background:#f8fafc;}</style>
+<style>
+  body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;background:#f8fafc;}
+
+  /* Consistent, modern dropdown styling across the whole app: kill the
+     native browser chrome and draw our own chevron so every <select>
+     looks like the rest of the UI instead of the OS default widget. */
+  select{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right .65rem center; background-size:1.1em;
+    padding-right:2.25rem; cursor:pointer;
+  }
+  select::-ms-expand{display:none;}
+</style>
 </head>
 <body class="text-slate-900">
 <div class="flex min-h-screen">

@@ -94,7 +94,7 @@ require __DIR__ . '/includes/header.php';
                 <form method="post" class="inline">
                   <input type="hidden" name="action" value="status">
                   <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
-                  <select name="status" onchange="this.form.submit()" class="rounded-lg border-0 bg-transparent py-1 text-xs font-medium focus:ring-2 focus:ring-indigo-200">
+                  <select name="status" onchange="this.form.submit()" class="rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 text-xs font-medium text-slate-700 hover:border-slate-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100">
                     <?php foreach (STATUSES as $key => $meta): ?>
                       <option value="<?= e($key) ?>" <?= $p['status'] === $key ? 'selected' : '' ?>><?= e($meta['label']) ?></option>
                     <?php endforeach; ?>
