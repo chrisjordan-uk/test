@@ -5,10 +5,23 @@ operation: role-based login, an inventory overview, product management with
 status tracking, and a profit ledger that calculates monthly/yearly profit
 automatically.
 
-Stack: **React + Vite + Tailwind CSS** (frontend), **Node.js + Express**
-(backend API), **MySQL** (database), **JWT** authentication.
+Two versions of the same app live in this repo:
 
-## Features
+| | `php-app/` | `backend/` + `frontend/` |
+|---|---|---|
+| Stack | Plain PHP + MySQL | Node.js/Express API + React SPA |
+| Setup | Upload files, edit one config, done | Node.js hosting, build step, `npm install` |
+| Best for | **Ordinary shared hosting** (Hostinger, cPanel, etc.) | A VPS, or a platform that runs Node.js |
+
+**If you're deploying to shared hosting, use `php-app/` — see
+[`php-app/README.md`](php-app/README.md) for the 5-step setup.** It has no
+build step and no dependencies: upload the folder, point it at a MySQL
+database, visit one URL once to create the admin account, and it works.
+
+The Node/React version is documented further down, for anyone who does have
+a VPS or a Node-capable host and wants the SPA version instead.
+
+## Features (both versions)
 
 1. **Role-based login** — username/password sign-in. Every feature
    (Home, Inventory, Products, Profit, Users) has a per-role permission
@@ -37,21 +50,35 @@ Default roles seeded out of the box:
 | Manager | view      | manage    | manage   | manage  | none    |
 | Staff   | view      | view      | manage   | none    | none    |
 
-Roles and their permissions can be edited from the **Users & Roles**
-page (Admin only), and custom roles can be added via the API.
+Roles and their permissions can be edited from the **Users & Roles** page by
+anyone whose role has `manage` on `users`.
 
-## Project structure
+## Notes on the data model (both versions)
+
+- Every product automatically gets a matching "purchase" entry in the
+  profit ledger when created, and a "sale" entry when its status is set
+  to *Sold* with a sold price — so the Profit page always reflects what's
+  in Products/Inventory without double entry.
+- Manual ledger entries (stock bought in bulk, shipping/packaging
+  expenses, etc.) are not tied to a specific product and can be added,
+  edited or deleted freely from the Profit page.
+
+---
+
+## Advanced: the Node.js / React version
+
+Stack: **React + Vite + Tailwind CSS** (frontend), **Node.js + Express**
+(backend API), **MySQL** (database), **JWT** authentication. Use this if you
+have a VPS, or a host that can run a persistent Node.js process (Railway,
+Render, a cPanel/Hostinger plan with "Node.js App" support, etc.) and you
+want the single-page-app version.
 
 ```
 backend/    Express API + MySQL access (routes, middleware, db schema/seed)
 frontend/   React + Vite + Tailwind single-page app
 ```
 
-## Getting started
-
 ### 1. Database
-
-Create a database and load the schema:
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE vinted_resell CHARACTER SET utf8mb4;"
@@ -72,22 +99,13 @@ npm run seed             # creates default roles + the first admin user
 npm run dev               # starts the API on http://localhost:4000
 ```
 
-The seed script prints the admin username/password it created (from
-`SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` in `.env`) — log in and change
-it right away from the app once you're in.
-
 ### 3. Frontend
 
 ```bash
 cd frontend
-cp .env.example .env    # only needed if the API isn't proxied at /api
 npm install
-npm run dev               # starts the app on http://localhost:5173
+npm run dev               # starts the app on http://localhost:5173, proxying /api to :4000
 ```
-
-In development, `npm run dev` proxies `/api/*` requests to
-`http://localhost:4000` (see `frontend/vite.config.js`), so both servers
-just need to be running side by side.
 
 ### 4. Production build
 
@@ -96,94 +114,64 @@ cd frontend && npm run build   # outputs static files to frontend/dist
 cd backend && npm start         # run the API behind your reverse proxy of choice
 ```
 
-Serve `frontend/dist` as static files (e.g. via Nginx) and point it at the
-backend API's `/api` path.
+Serve `frontend/dist` as static files and point them at the backend API's
+`/api` path — see the environment variables note below for `CORS_ORIGIN`
+and `VITE_API_URL` when the two are on different domains.
 
-## Environment variables
+### Environment variables
 
-See `backend/.env.example` and `frontend/.env.example` for the full list.
-Key ones:
+See `backend/.env.example` and `frontend/.env.example`. Key ones:
+`JWT_SECRET` (change before going live), `SEED_ADMIN_USERNAME` /
+`SEED_ADMIN_PASSWORD` (used once by `npm run seed`), `CORS_ORIGIN` (set to
+the frontend's origin in production), `VITE_API_URL` (set to the backend's
+full URL when it's not served from the same domain/path as the frontend).
 
-- `JWT_SECRET` — change this to a long random string before going live.
-- `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` — used once by `npm run seed`
-  to create the first Admin account.
-- `CORS_ORIGIN` — set to your frontend's origin in production.
+### Deploying to Hostinger (hPanel)
 
-## Deploying to shared hosting
+Hostinger's shared/business plans use their own **hPanel**, not cPanel.
+Layout: main domain serves the static frontend, a subdomain runs the Node
+API.
 
-### On Hostinger (hPanel)
-
-Hostinger's shared/business plans use their own **hPanel**, not cPanel, but
-the pieces are the same: a Node.js app runner, MySQL databases with
-phpMyAdmin, and a file manager. Layout: main domain serves the static
-frontend, a subdomain runs the Node API.
-
-1. **Check Node support.** In hPanel, open **Advanced → Node.js**. If it's
-   not there, this plan can't run the backend directly — use Hostinger's VPS
-   plan, or run the API on a free/cheap platform like Railway/Render while
-   keeping the frontend on Hostinger as static files.
-2. **Create the API subdomain.** **Domains → Subdomains** → create
+1. **Check Node support.** In hPanel, open **Advanced → Node.js**. Not
+   there? This plan can't run the backend directly — use `php-app/`
+   instead, or Hostinger's VPS plan / Railway / Render for the API.
+2. **Create the API subdomain**: **Domains → Subdomains** → create
    `api.yourdomain.com`.
-3. **Create the database.** **Databases → MySQL Databases** → create a
-   database and a user (Hostinger prefixes both with something like
-   `u123456789_` — use the exact names hPanel shows you) → attach the user
-   to the database with all privileges. Then **Databases → phpMyAdmin** →
-   open the database → **Import** tab → choose `backend/db/schema.sql` from
-   this repo → Go.
-4. **Upload the backend.** Zip the `backend/` folder (skip `node_modules`
-   and `.env`), upload it via **Files → File Manager** into the application
-   root Hostinger will use for the subdomain, then extract it there.
-5. **Create the Node.js app.** **Advanced → Node.js → Create Application**:
-   - Node.js version: 18 or newer
-   - Application root: the folder from step 4
-   - Application URL: `api.yourdomain.com`
-   - Application startup file: `server.js`
-   - If you see an **Environment variables** field, add: `DB_HOST=localhost`,
-     `DB_PORT=3306`, `DB_USER=`, `DB_PASSWORD=`, `DB_NAME=` (your real
-     prefixed values), `JWT_SECRET=` (generate one with
-     `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`),
-     `JWT_EXPIRES_IN=8h`, `CORS_ORIGIN=https://yourdomain.com`, and
-     `SEED_ADMIN_USERNAME` / `SEED_ADMIN_PASSWORD` / `SEED_ADMIN_EMAIL` for
-     the one-time seed step. If there's **no** such field on your plan,
-     upload a `.env` file with the same keys straight into the application
-     root instead (next to `server.js`) — the app reads it automatically.
-   - Click **Run NPM Install**.
-6. **Seed the database** (creates the default roles + first admin user):
-   - If **Advanced → SSH Access** is enabled on your plan, connect with an
-     SSH client (PuTTY, or `ssh` from a terminal) using the host/port/user
-     hPanel shows you, then run the command hPanel's Node.js screen gives
-     you to enter the app's environment, followed by `npm run seed`.
-   - No SSH on your plan? Seed it by hand through phpMyAdmin's **SQL** tab
-     instead — see "Seeding without SSH" below.
-7. Click **Restart** on the Node app, then test
-   `https://api.yourdomain.com/api/health` — it should return `{"ok":true}`.
-8. **Build and upload the frontend**, from your own computer:
+3. **Create the database**: **Databases → MySQL Databases** → create a
+   database and a user (Hostinger prefixes both, e.g. `u123456789_...`) →
+   attach the user with all privileges. Then **Databases → phpMyAdmin** →
+   open the database → **Import** → choose `backend/db/schema.sql` → Go.
+4. **Upload the backend**: zip `backend/` (skip `node_modules`, `.env`),
+   upload via **Files → File Manager** into the application root, extract.
+5. **Create the Node.js app**: **Advanced → Node.js → Create Application**
+   — Node 18+, application root = the folder from step 4, application URL
+   = `api.yourdomain.com`, startup file = `server.js`. Add the environment
+   variables listed above (or upload a `.env` file into the app root if
+   there's no env-vars field), then click **Run NPM Install**.
+6. **Seed the database**: if **Advanced → SSH Access** is enabled, SSH in,
+   enter the app's virtual environment (command shown on the Node.js
+   screen), run `npm run seed`. No SSH? See "Seeding without SSH" below.
+7. **Restart** the app, test `https://api.yourdomain.com/api/health`.
+8. **Build and upload the frontend** from your own computer:
    ```bash
    cd frontend
    echo "VITE_API_URL=https://api.yourdomain.com/api" > .env
-   npm install
-   npm run build
+   npm install && npm run build
    ```
-   Upload everything **inside** `frontend/dist/` (not the folder itself)
-   into `public_html` for `yourdomain.com` via File Manager or FTP
-   (**Advanced → FTP Accounts** for credentials). The included `.htaccess`
-   is copied into `dist/` automatically and makes page refreshes on routes
-   like `/products` work.
-9. **SSL.** Hostinger issues free SSL automatically for domains and
-   subdomains — check **Security → SSL** that both `yourdomain.com` and
-   `api.yourdomain.com` show as active before relying on the `https://` URLs
-   above.
-10. Log in and change the seeded admin password from the app. Done.
+   Upload everything inside `frontend/dist/` to `public_html` for
+   `yourdomain.com`. Its `.htaccess` (copied in automatically) makes page
+   refreshes on routes like `/products` work.
+9. **Enable SSL** for both domains (**Security → SSL** — Hostinger issues
+   it automatically).
+10. Log in, change the seeded admin password. Done.
 
 #### Seeding without SSH
 
-1. On your own computer, with this repo's `backend/` folder and
-   `npm install` already run there, generate a password hash:
+1. Locally, with `backend/` and `npm install` already run there:
    ```bash
    node -e "console.log(require('bcryptjs').hashSync('ChangeMe123!', 10))"
    ```
-   (swap `ChangeMe123!` for the admin password you actually want).
-2. In phpMyAdmin, open your database's **SQL** tab and run:
+2. In phpMyAdmin's **SQL** tab:
    ```sql
    INSERT INTO roles (name, description, permissions) VALUES
    ('Admin', 'Full access to every feature, including user & role management.',
@@ -194,112 +182,34 @@ frontend, a subdomain runs the Node API.
     '{"dashboard":"view","inventory":"view","products":"manage","profit":"none","users":"none"}');
 
    INSERT INTO users (username, password_hash, full_name, email, role_id)
-   VALUES ('admin', '<paste the hash from step 1 here>', 'Administrator',
+   VALUES ('admin', '<paste the hash here>', 'Administrator',
            'admin@example.com', (SELECT id FROM roles WHERE name = 'Admin'));
    ```
-3. Log in to the app with `admin` / the password you hashed, then change it
-   from the Users page.
+3. Log in with `admin` / the password you hashed, then change it.
 
-### On cPanel hosts
+### Deploying to cPanel hosts
 
-This assumes a cPanel host with **"Setup Node.js App"** (Phusion Passenger /
-CloudLinux NodeJS Selector) and **MySQL Databases** — most Bulgarian hosts
-(SuperHosting, Hosting.bg, etc.) have both on their business plans. Layout:
-the main domain serves the static frontend, a subdomain runs the Node API.
+Needs a cPanel host with **"Setup Node.js App"** (Phusion Passenger) and
+**MySQL Databases**. Same layout and steps as the Hostinger walkthrough
+above, with cPanel's own naming:
 
-#### 1. Check Node support & pick a layout
-
-In cPanel, look for an icon called **"Setup Node.js App"**. If it's not
-there, this plan can't run the backend — you'd need a VPS or a platform like
-Railway/Render for the API instead (the frontend can still go on the same
-shared hosting as static files).
-
-Decide on:
-- `yourdomain.com` → frontend (static files)
-- `api.yourdomain.com` → backend (Node app) — create this subdomain first
-  under **Domains → Create A New Domain**
-
-#### 2. Create the database
-
-**MySQL Databases** in cPanel:
-1. Create a database, e.g. `vinted_resell` (cPanel will prefix it, e.g.
-   `cpaneluser_vinted_resell`).
-2. Create a database user + password (also prefixed, e.g.
-   `cpaneluser_vinted`).
-3. Add that user to the database with **All Privileges**.
-
-Load the schema via **phpMyAdmin**: open the new database → **Import** tab →
-choose `backend/db/schema.sql` from this repo → Go.
-
-#### 3. Upload and configure the backend
-
-1. Upload the `backend/` folder somewhere **outside** `public_html` (e.g.
-   `/home/cpaneluser/vinted-api`) — via File Manager (zip it, upload, extract)
-   or `git clone` if you have SSH/Terminal access. Skip `node_modules` and
-   `.env` — you'll create those next.
-2. **Setup Node.js App** → Create Application:
-   - Node.js version: 18.x or newer
-   - Application mode: Production
-   - Application root: the folder from step 1 (e.g. `vinted-api`)
-   - Application URL: `api.yourdomain.com`
-   - Application startup file: `server.js`
-3. In the same screen, add **Environment Variables** (this replaces the
-   `.env` file — no need to upload one):
-   - `DB_HOST=localhost`
-   - `DB_PORT=3306`
-   - `DB_USER=cpaneluser_vinted` (your real prefixed DB user)
-   - `DB_PASSWORD=...`
-   - `DB_NAME=cpaneluser_vinted_resell` (your real prefixed DB name)
-   - `JWT_SECRET=` a long random string (generate one with
-     `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`)
-   - `JWT_EXPIRES_IN=8h`
-   - `CORS_ORIGIN=https://yourdomain.com`
-   - `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_EMAIL` — only
-     needed for the one-time seed step below.
-4. Click **Run NPM Install** in the same screen (installs `package.json`
-   dependencies inside the app's virtual environment).
-5. Run the seed script once, using the "Enter to virtual environment"
-   command cPanel shows you (via **Terminal** in cPanel, or SSH), e.g.:
-   ```bash
-   source /home/cpaneluser/nodevenv/vinted-api/18/bin/activate
-   cd /home/cpaneluser/vinted-api
-   npm run seed
-   ```
-   This prints the admin login it created.
-6. Click **Restart** on the Node app. Test it:
-   `https://api.yourdomain.com/api/health` should return `{"ok":true}`.
-
-#### 4. Build and upload the frontend
-
-Build it **locally** (on your own computer), pointing it at the live API:
-
-```bash
-cd frontend
-echo "VITE_API_URL=https://api.yourdomain.com/api" > .env
-npm install
-npm run build
-```
-
-Upload everything **inside** `frontend/dist/` (not the folder itself) to
-`public_html` for `yourdomain.com`, via File Manager or FTP. The included
-`.htaccess` (copied into `dist/` automatically) makes page refreshes on
-routes like `/products` work correctly.
-
-#### 5. Enable HTTPS
-
-Under **SSL/TLS Status** or **AutoSSL**, issue a free Let's Encrypt
-certificate for both `yourdomain.com` and `api.yourdomain.com`. Once both
-have valid HTTPS, everything above (CORS_ORIGIN, VITE_API_URL) already uses
-`https://`, so no further changes are needed.
-
-Log in, change the seeded admin password from the app, and you're live.
-
-## Notes on the data model
-
-- Every product automatically gets a matching "purchase" entry in the
-  profit ledger when created, and a "sale" entry when its status is set
-  to *Sold* with a sold price — so the Profit page always reflects what's
-  in Products/Inventory without double entry.
-- Manual ledger entries (stock bought in bulk, shipping/packaging
-  expenses, etc.) are not tied to a specific product and can be added,
-  edited or deleted freely from the Profit page.
+1. Check for **"Setup Node.js App"** in cPanel. Not there → use `php-app/`
+   instead, or a VPS.
+2. Create the `api.yourdomain.com` subdomain under **Domains**.
+3. **MySQL Databases** → create a database + user (cPanel prefixes both,
+   e.g. `cpaneluser_vinted...`) → add the user with **All Privileges**.
+   Import `backend/db/schema.sql` via **phpMyAdmin**.
+4. Upload `backend/` outside `public_html` (e.g.
+   `/home/cpaneluser/vinted-api`).
+5. **Setup Node.js App** → Create Application: Node 18+, application root
+   = that folder, application URL = `api.yourdomain.com`, startup file =
+   `server.js`. Add the environment variables from the list above, then
+   **Run NPM Install**.
+6. Seed once via **Terminal**/SSH (`source .../nodevenv/.../bin/activate`,
+   `cd` into the app, `npm run seed`) — or by hand, per "Seeding without
+   SSH" above.
+7. **Restart**, test `https://api.yourdomain.com/api/health`.
+8. Build the frontend locally (same commands as above) and upload
+   `frontend/dist/`'s contents to `public_html`.
+9. Issue SSL for both domains under **SSL/TLS Status** / **AutoSSL**.
+10. Log in, change the admin password.
