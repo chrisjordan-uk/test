@@ -1,7 +1,5 @@
-// Idempotent seed script: creates the default roles and a first admin user
-// if they don't exist yet. Safe to run multiple times.
-//
-// Usage: npm run seed   (reads DB + admin credentials from .env)
+// Creates the default roles and a first admin user if they don't exist yet.
+// Safe to run more than once. Usage: npm run seed
 
 require('dotenv').config();
 const bcrypt = require('bcryptjs');

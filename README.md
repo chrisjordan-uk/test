@@ -60,9 +60,13 @@ mysql -u root -p vinted_resell < backend/db/schema.sql
 
 ### 2. Backend API
 
+`.env.example` already has everything filled in — copy it to `.env` and
+change `DB_USER` / `DB_PASSWORD` to your MySQL account, nothing else needs
+to be touched.
+
 ```bash
 cd backend
-cp .env.example .env    # edit DB credentials, JWT_SECRET, seed admin password
+cp .env.example .env    # then edit DB_USER and DB_PASSWORD
 npm install
 npm run seed             # creates default roles + the first admin user
 npm run dev               # starts the API on http://localhost:4000

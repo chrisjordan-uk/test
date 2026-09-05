@@ -1,5 +1,4 @@
-// A tiny hand-rolled icon set (outline style) so we don't need an icon
-// library dependency. Add more paths here as needed.
+// small outline icon set, no external dependency
 const PATHS = {
   home: 'M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9',
   box: 'M21 8 12 3 3 8m18 0-9 5m9-5v9l-9 5m0-9L3 8m9 5v9M3 8v9l9 5',

@@ -1,10 +1,4 @@
-// Central definition of the permission model used across the app.
-//
-// Each role has a `permissions` JSON object mapping a feature key to a level:
-//   'none'   - the feature is hidden and every endpoint for it is blocked
-//   'view'   - read-only access (GET endpoints)
-//   'manage' - full access (create/update/delete/status changes)
-
+// permissions: { feature: 'none' | 'view' | 'manage' } per role
 const FEATURES = ['dashboard', 'inventory', 'products', 'profit', 'users'];
 
 const LEVELS = ['none', 'view', 'manage'];
@@ -21,14 +15,12 @@ function normalizePermissions(raw) {
   return result;
 }
 
-// True when `permissions[feature]` grants at least `minLevel`.
 function hasPermission(permissions, feature, minLevel = 'view') {
   if (!permissions) return false;
   const level = permissions[feature] || 'none';
   return LEVEL_RANK[level] >= LEVEL_RANK[minLevel];
 }
 
-// True when `permissions` grants at least `minLevel` on ANY of the given features.
 function hasAnyPermission(permissions, features, minLevel = 'view') {
   return features.some((feature) => hasPermission(permissions, feature, minLevel));
 }
