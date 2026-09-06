@@ -90,6 +90,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             syncPurchaseTransaction($pdo, $saved);
             syncSaleTransaction($pdo, $saved, currentUser()['id']);
 
+            $label = $saved['name'] . ($saved['product_number'] ? ' (' . $saved['product_number'] . ')' : '');
+            if ($product) {
+                $changes = [];
+                foreach (['name', 'brand', 'category', 'size', 'color', 'item_condition', 'status', 'bought_price', 'sold_price', 'purchase_date', 'sold_date', 'buyer'] as $field) {
+                    $before = $product[$field];
+                    $after = $saved[$field];
+                    if ((string) $before !== (string) $after) {
+                        $changes[] = "$field: " . ($before === null || $before === '' ? '—' : $before) . ' → ' . ($after === null || $after === '' ? '—' : $after);
+                    }
+                }
+                logActivity($pdo, 'product.update', "Updated $label" . ($changes ? ' (' . implode(', ', $changes) . ')' : ''), 'product', $id);
+            } else {
+                logActivity($pdo, 'product.create', "Added $label", 'product', $id);
+            }
+
             $pdo->commit();
             flash('success', $product ? 'Product updated.' : 'Product added.');
             redirect('products.php');

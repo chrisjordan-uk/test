@@ -16,12 +16,22 @@ $permissions = normalizePermissions($role['permissions']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $description = trim($_POST['description'] ?? '');
+    $before = $permissions;
     foreach (FEATURES as $f) {
         $level = $_POST['perm'][$f] ?? 'none';
         $permissions[$f] = in_array($level, LEVELS, true) ? $level : 'none';
     }
     $pdo->prepare('UPDATE roles SET description = ?, permissions = ? WHERE id = ?')
         ->execute([$description ?: null, json_encode($permissions), $id]);
+
+    $changes = [];
+    foreach (FEATURES as $f) {
+        if ($before[$f] !== $permissions[$f]) {
+            $changes[] = "$f: {$before[$f]} → {$permissions[$f]}";
+        }
+    }
+    logActivity($pdo, 'role.update', "Updated \"{$role['name']}\" permissions" . ($changes ? ' (' . implode(', ', $changes) . ')' : ''), 'role', $id);
+
     flash('success', 'Role updated.');
     redirect('users.php?tab=roles');
 }

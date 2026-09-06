@@ -4,7 +4,7 @@
  * Included once by config.php, which every page loads first.
  */
 
-const FEATURES = ['dashboard', 'inventory', 'products', 'profit', 'users'];
+const FEATURES = ['dashboard', 'inventory', 'products', 'profit', 'reports', 'users'];
 const LEVELS = ['none', 'view', 'manage'];
 const LEVEL_RANK = ['none' => 0, 'view' => 1, 'manage' => 2];
 
@@ -28,17 +28,17 @@ const DEFAULT_ROLES = [
     [
         'name' => 'Admin',
         'description' => 'Full access to every feature, including user & role management.',
-        'permissions' => ['dashboard' => 'manage', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'users' => 'manage'],
+        'permissions' => ['dashboard' => 'manage', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'reports' => 'manage', 'users' => 'manage'],
     ],
     [
         'name' => 'Manager',
         'description' => 'Runs day-to-day operations: products, inventory and profit tracking.',
-        'permissions' => ['dashboard' => 'view', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'users' => 'none'],
+        'permissions' => ['dashboard' => 'view', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'reports' => 'view', 'users' => 'none'],
     ],
     [
         'name' => 'Staff',
         'description' => 'Handles listing and shipping: can view everything and update products.',
-        'permissions' => ['dashboard' => 'view', 'inventory' => 'view', 'products' => 'manage', 'profit' => 'none', 'users' => 'none'],
+        'permissions' => ['dashboard' => 'view', 'inventory' => 'view', 'products' => 'manage', 'profit' => 'none', 'reports' => 'none', 'users' => 'none'],
     ],
 ];
 
@@ -220,6 +220,53 @@ function generateProductNumber(int $id): string
     return 'VR-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
 }
 
+// ---------------------------------------------------------------- activity --
+
+function clientIp(): ?string
+{
+    return $_SERVER['REMOTE_ADDR'] ?? null;
+}
+
+/**
+ * Record one line in the activity log: who did what, when, from where.
+ * `$user` defaults to the signed-in user but can be passed explicitly for
+ * events (like a failed login) where there's no session user yet.
+ */
+function logActivity(PDO $pdo, string $action, string $description, ?string $entityType = null, ?int $entityId = null, ?array $user = null): void
+{
+    $user = $user ?? currentUser();
+    $pdo->prepare(
+        'INSERT INTO activity_log (user_id, username, action, entity_type, entity_id, description, ip_address)
+         VALUES (?, ?, ?, ?, ?, ?, ?)'
+    )->execute([
+        $user['id'] ?? null,
+        $user['username'] ?? null,
+        $action,
+        $entityType,
+        $entityId,
+        $description,
+        clientIp(),
+    ]);
+}
+
+const ACTIVITY_LABELS = [
+    'login' => 'Signed in',
+    'login_failed' => 'Failed sign-in',
+    'logout' => 'Signed out',
+    'product.create' => 'Product added',
+    'product.update' => 'Product updated',
+    'product.status_change' => 'Status changed',
+    'product.bulk_status_change' => 'Bulk status change',
+    'product.delete' => 'Product deleted',
+    'transaction.create' => 'Ledger entry added',
+    'transaction.delete' => 'Ledger entry deleted',
+    'user.create' => 'User created',
+    'user.update' => 'User updated',
+    'user.delete' => 'User deleted',
+    'role.update' => 'Role permissions updated',
+    'role.create' => 'Role created',
+];
+
 // --------------------------------------------------------------------- UI --
 
 function navItems(): array
@@ -229,6 +276,7 @@ function navItems(): array
         ['href' => 'inventory.php', 'label' => 'Inventory', 'feature' => 'inventory'],
         ['href' => 'products.php', 'label' => 'Products', 'feature' => 'products'],
         ['href' => 'profit.php', 'label' => 'Profit', 'feature' => 'profit'],
+        ['href' => 'reports.php', 'label' => 'Reports', 'feature' => 'reports'],
         ['href' => 'users.php', 'label' => 'Users & Roles', 'feature' => 'users'],
     ];
 }

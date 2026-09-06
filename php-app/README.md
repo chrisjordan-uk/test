@@ -14,8 +14,10 @@ db/seed.php           Visit this once in your browser to create the admin accoun
 index.php             Home / dashboard
 inventory.php         Read-only product table with filters
 products.php + product_form.php    Add/edit products, change status
+bulk_status.php       Change many products' status at once by pasting numbers
 profit.php + transaction_form.php  Purchases/sales/expenses ledger
-users.php + user_form.php + role_form.php   User & role management
+reports.php           Sales/purchases for a chosen day or date range
+users.php + user_form.php + role_form.php   User, role & activity-log management
 includes/            Shared layout + helper functions
 ```
 
@@ -26,8 +28,10 @@ includes/            Shared layout + helper functions
    note the database name, username and password it gives you.
 2. **Import the schema.** Open phpMyAdmin → select your database →
    **Import** tab → choose `db/database.sql` → Go. (Already set this up
-   before? Run the file in `db/migrations/` instead — it just adds what's
-   new without touching your data.)
+   before? Run each file in `db/migrations/` instead, in order — they only
+   add what's new without touching your data. Then re-visit `db/seed.php`
+   once — it's safe to run again and will add the new "Reports" permission
+   to your existing Admin/Manager/Staff roles.)
 3. **Upload this whole `php-app` folder** to your hosting (as the contents
    of `public_html`, or a subfolder if you want the app at
    `yoursite.com/shop/`) via File Manager or FTP.
@@ -59,6 +63,20 @@ from the Users page.
 - **Sales performance stats** on Profit: items sold, average sale price,
   average margin, average days to sell — computed straight from your sold
   products.
+- **Reports** page: pick a day or date range (with Today/Yesterday/Last 7
+  days/This month shortcuts) to see exactly what sold, what new stock came
+  in, and every status change in that window, each with its own CSV export.
+- **Bulk status update**: paste a list of product numbers (one per line, or
+  comma/space-separated — however you copy them out of a spreadsheet or
+  scanner app) and set all of them to the same status in one click. Built
+  for marking a big batch of parcels "Shipped" at once instead of one at a
+  time. Numbers that don't match anything are listed back to you so typos
+  are easy to catch.
+- **Activity log** (Users & Roles → Activity log, visible to whoever can
+  manage users): every sign-in (successful or failed), every product
+  added/edited/status-changed/deleted, every ledger entry, and every user
+  or role change — who did it, exactly what changed, when, and from which
+  IP address. Filterable by user and action type, paginated.
 
 ## Using it as an iPhone app
 

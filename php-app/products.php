@@ -19,16 +19,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare('SELECT * FROM products WHERE id = ?');
             $stmt->execute([$id]);
             if ($product = $stmt->fetch()) {
+                $oldStatus = $product['status'];
                 $pdo->prepare('UPDATE products SET status = ? WHERE id = ?')->execute([$status, $id]);
                 $product['status'] = $status;
                 syncPurchaseTransaction($pdo, $product);
                 syncSaleTransaction($pdo, $product, currentUser()['id']);
+                if ($oldStatus !== $status) {
+                    $label = $product['name'] . ($product['product_number'] ? ' (' . $product['product_number'] . ')' : '');
+                    logActivity($pdo, 'product.status_change', "$label: " . (STATUSES[$oldStatus]['label'] ?? $oldStatus) . ' → ' . (STATUSES[$status]['label'] ?? $status), 'product', $id);
+                }
                 flash('success', 'Status updated.');
             }
         }
     } elseif ($action === 'delete' && $id) {
-        $pdo->prepare('DELETE FROM products WHERE id = ?')->execute([$id]);
-        flash('success', 'Product deleted.');
+        $stmt = $pdo->prepare('SELECT * FROM products WHERE id = ?');
+        $stmt->execute([$id]);
+        if ($product = $stmt->fetch()) {
+            $pdo->prepare('DELETE FROM products WHERE id = ?')->execute([$id]);
+            $label = $product['name'] . ($product['product_number'] ? ' (' . $product['product_number'] . ')' : '');
+            logActivity($pdo, 'product.delete', "Deleted $label", 'product', $id);
+            flash('success', 'Product deleted.');
+        }
     }
 
     redirect('products.php' . ($_GET['q'] ?? '' ? '?q=' . urlencode($_GET['q']) : ''));
@@ -59,6 +70,7 @@ require __DIR__ . '/includes/header.php';
       <button type="submit" class="<?= BTN_SECONDARY ?>">Search</button>
     </form>
     <?php if ($canManage): ?>
+      <a href="bulk_status.php" class="<?= BTN_SECONDARY ?>">⚡ Bulk status update</a>
       <a href="product_form.php" class="<?= BTN_PRIMARY ?>">+ Add product</a>
     <?php endif; ?>
   </div>

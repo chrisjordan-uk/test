@@ -11,9 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (($_POST['action'] ?? '') === 'delete') {
         $id = (int) ($_POST['id'] ?? 0);
-        // Only manual (not product-linked) entries may be deleted here.
-        $pdo->prepare('DELETE FROM transactions WHERE id = ? AND product_id IS NULL')->execute([$id]);
-        flash('success', 'Entry deleted.');
+        $stmt = $pdo->prepare('SELECT * FROM transactions WHERE id = ? AND product_id IS NULL');
+        $stmt->execute([$id]);
+        if ($t = $stmt->fetch()) {
+            // Only manual (not product-linked) entries may be deleted here.
+            $pdo->prepare('DELETE FROM transactions WHERE id = ?')->execute([$id]);
+            logActivity($pdo, 'transaction.delete', ucfirst($t['type']) . ": {$t['description']} (" . money($t['amount'] * $t['quantity']) . ')', 'transaction', $id);
+            flash('success', 'Entry deleted.');
+        }
     }
     redirect('profit.php');
 }

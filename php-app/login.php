@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $row = $stmt->fetch();
 
         if (!$row || !$row['is_active'] || !password_verify($password, $row['password_hash'])) {
+            logActivity($pdo, 'login_failed', "Failed sign-in attempt for username \"$username\"", null, null, ['id' => $row['id'] ?? null, 'username' => $username]);
             $error = 'Invalid username or password.';
         } else {
             $_SESSION['user'] = [
@@ -34,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'role_name' => $row['role_name'],
                 'permissions' => normalizePermissions($row['permissions']),
             ];
+            logActivity($pdo, 'login', 'Signed in');
             redirect('index.php');
         }
     }

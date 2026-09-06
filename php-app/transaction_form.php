@@ -36,6 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $form['type'], $form['category'] ?: null, $form['description'], $form['amount'],
             (int) ($form['quantity'] ?: 1), $form['transaction_date'], currentUser()['id'],
         ]);
+        $newId = (int) $pdo->lastInsertId();
+        logActivity($pdo, 'transaction.create', ucfirst($form['type']) . ": {$form['description']} (" . money($form['amount'] * ($form['quantity'] ?: 1)) . ')', 'transaction', $newId);
         flash('success', 'Entry added.');
         redirect('profit.php');
     }

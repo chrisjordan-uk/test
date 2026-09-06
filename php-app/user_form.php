@@ -44,6 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!$errors) {
         try {
+            $roleName = null;
+            foreach ($roles as $r) {
+                if ((int) $r['id'] === (int) $form['role_id']) {
+                    $roleName = $r['name'];
+                }
+            }
+
             if ($existing) {
                 if ($password !== '') {
                     $pdo->prepare('UPDATE users SET full_name = ?, email = ?, role_id = ?, is_active = ?, password_hash = ? WHERE id = ?')
@@ -52,10 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->prepare('UPDATE users SET full_name = ?, email = ?, role_id = ?, is_active = ? WHERE id = ?')
                         ->execute([$form['full_name'] ?: null, $form['email'] ?: null, $form['role_id'], $form['is_active'], $id]);
                 }
+                $summary = "Updated user \"{$existing['username']}\" (role: $roleName, " . ($form['is_active'] ? 'active' : 'disabled') . ($password !== '' ? ', password changed' : '') . ')';
+                logActivity($pdo, 'user.update', $summary, 'user', $id);
                 flash('success', 'User updated.');
             } else {
                 $pdo->prepare('INSERT INTO users (username, password_hash, full_name, email, role_id, is_active) VALUES (?, ?, ?, ?, ?, ?)')
                     ->execute([$form['username'], password_hash($password, PASSWORD_DEFAULT), $form['full_name'] ?: null, $form['email'] ?: null, $form['role_id'], $form['is_active']]);
+                $newId = (int) $pdo->lastInsertId();
+                logActivity($pdo, 'user.create', "Created user \"{$form['username']}\" (role: $roleName)", 'user', $newId);
                 flash('success', 'User created.');
             }
             redirect('users.php');
