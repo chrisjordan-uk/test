@@ -12,6 +12,7 @@ config.php          The only file you need to edit (database credentials)
 db/database.sql      Import this once into your MySQL database
 db/seed.php           Visit this once in your browser to create the admin account
 index.php             Home / dashboard
+tasks.php + task_form.php          Assign and track to-dos, with a badge for what's pending
 inventory.php         Read-only product table with filters
 products.php + product_form.php    Add/edit products, change status
 bulk_status.php       Change many products' status at once by pasting numbers
@@ -30,8 +31,8 @@ includes/            Shared layout + helper functions
    **Import** tab → choose `db/database.sql` → Go. (Already set this up
    before? Run each file in `db/migrations/` instead, in order — they only
    add what's new without touching your data. Then re-visit `db/seed.php`
-   once — it's safe to run again and will add the new "Reports" permission
-   to your existing Admin/Manager/Staff roles.)
+   once — it's safe to run again and will add the new "Reports"/"Tasks"
+   permissions to your existing Admin/Manager/Staff roles.)
 3. **Upload this whole `php-app` folder** to your hosting (as the contents
    of `public_html`, or a subfolder if you want the app at
    `yoursite.com/shop/`) via File Manager or FTP.
@@ -86,6 +87,14 @@ from the Users page.
   edit page shows a live feed of everything tied to that account — every
   sign-in, every change they made elsewhere in the app, and who
   created/edited/changed the role on their account and when.
+- **Tasks**: anyone with `tasks: manage` (Admin/Manager by default) can
+  assign a to-do — with a priority and an optional due date — to any user
+  or to themselves. Everyone with at least `tasks: view` gets a **Tasks**
+  page listing what's on their plate, a "Your open tasks" card on Home,
+  and a red counter on the Tasks link in the sidebar for what's still
+  pending — the notification that something needs doing. Ticking a task
+  off (or reopening it) is one click; managers also get an "Everyone's
+  tasks" view to see the whole team's workload at a glance.
 
 ## Using it as an iPhone app
 
@@ -119,3 +128,10 @@ This works because of the icons in `assets/icons/` and the tags in
 - Roles and their permissions (`none` / `view` / `manage` per feature) are
   edited from **Users & Roles** by anyone whose role has `manage` on
   `users`.
+- A few small animations round out the feel: pages settle in on load,
+  the login screen has a drifting gradient and a floating logo, the
+  dashboard's stat cards lift slightly on hover, the sidebar's active
+  page gets a sliding accent bar, and the Tasks badge gently pulses so
+  it's noticed without being obnoxious about it. All CSS-only (see the
+  `<style>` block in `includes/header.php` and `login.php`) — no extra
+  libraries, so nothing to slow the app down.

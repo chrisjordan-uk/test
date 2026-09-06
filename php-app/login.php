@@ -51,31 +51,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<style>body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;}</style>
+<style>
+  body{font-family:'Inter',ui-sans-serif,system-ui,sans-serif;}
+  @keyframes drift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  .bg-drift{background-size:200% 200%;animation:drift 12s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-6px) rotate(-4deg)}}
+  .float-icon{animation:float 4s ease-in-out infinite}
+  @keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .card-in{animation:cardIn .5s cubic-bezier(.16,1,.3,1)}
+  @keyframes shakeErr{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .shake{animation:shakeErr .3s ease-in-out}
+</style>
 </head>
-<body class="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-700 via-indigo-600 to-slate-900 px-4">
+<body class="bg-drift flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-700 via-indigo-600 to-slate-900 px-4">
   <div class="w-full max-w-md">
     <div class="mb-8 flex flex-col items-center text-white">
-      <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-3xl backdrop-blur">🏷️</div>
+      <div class="float-icon mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-3xl backdrop-blur">🏷️</div>
       <h1 class="text-2xl font-bold">Vinted Resell Manager</h1>
       <p class="mt-1 text-sm text-white/70">Sign in to manage your business</p>
     </div>
 
-    <form method="post" class="space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+    <form method="post" class="card-in space-y-4 rounded-2xl border border-slate-200 bg-white p-8 shadow-xl">
       <div>
         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500" for="username">Username</label>
-        <input id="username" name="username" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" autofocus required>
+        <input id="username" name="username" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition-shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" autofocus required>
       </div>
       <div>
         <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500" for="password">Password</label>
-        <input id="password" type="password" name="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
+        <input id="password" type="password" name="password" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm transition-shadow focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100" required>
       </div>
 
       <?php if ($error): ?>
-        <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"><?= e($error) ?></p>
+        <p class="shake rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"><?= e($error) ?></p>
       <?php endif; ?>
 
-      <button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Sign in</button>
+      <button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-all hover:-translate-y-0.5 hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-600/30 active:translate-y-0">Sign in</button>
     </form>
   </div>
 </body>

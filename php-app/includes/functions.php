@@ -4,7 +4,7 @@
  * Included once by config.php, which every page loads first.
  */
 
-const FEATURES = ['dashboard', 'inventory', 'products', 'profit', 'reports', 'users'];
+const FEATURES = ['dashboard', 'inventory', 'products', 'profit', 'reports', 'tasks', 'users'];
 const LEVELS = ['none', 'view', 'manage'];
 const LEVEL_RANK = ['none' => 0, 'view' => 1, 'manage' => 2];
 
@@ -20,6 +20,12 @@ const STATUSES = [
 
 const CONDITIONS = ['New with tags', 'New without tags', 'Very good', 'Good', 'Satisfactory'];
 
+const PRIORITIES = [
+    'low'    => ['label' => 'Low',    'class' => 'bg-slate-100 text-slate-600'],
+    'normal' => ['label' => 'Normal', 'class' => 'bg-sky-100 text-sky-700'],
+    'high'   => ['label' => 'High',   'class' => 'bg-red-100 text-red-700'],
+];
+
 const MONEY_SYMBOL = '£';
 
 const EXPENSE_CATEGORIES = ['Shipping', 'Packaging', 'Platform fees', 'Supplies', 'Other'];
@@ -28,17 +34,17 @@ const DEFAULT_ROLES = [
     [
         'name' => 'Admin',
         'description' => 'Full access to every feature, including user & role management.',
-        'permissions' => ['dashboard' => 'manage', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'reports' => 'manage', 'users' => 'manage'],
+        'permissions' => ['dashboard' => 'manage', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'reports' => 'manage', 'tasks' => 'manage', 'users' => 'manage'],
     ],
     [
         'name' => 'Manager',
         'description' => 'Runs day-to-day operations: products, inventory and profit tracking.',
-        'permissions' => ['dashboard' => 'view', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'reports' => 'view', 'users' => 'none'],
+        'permissions' => ['dashboard' => 'view', 'inventory' => 'manage', 'products' => 'manage', 'profit' => 'manage', 'reports' => 'view', 'tasks' => 'manage', 'users' => 'none'],
     ],
     [
         'name' => 'Staff',
         'description' => 'Handles listing and shipping: can view everything and update products.',
-        'permissions' => ['dashboard' => 'view', 'inventory' => 'view', 'products' => 'manage', 'profit' => 'none', 'reports' => 'none', 'users' => 'none'],
+        'permissions' => ['dashboard' => 'view', 'inventory' => 'view', 'products' => 'manage', 'profit' => 'none', 'reports' => 'none', 'tasks' => 'view', 'users' => 'none'],
     ],
 ];
 
@@ -266,7 +272,25 @@ const ACTIVITY_LABELS = [
     'role.update' => 'Role permissions updated',
     'role.create' => 'Role created',
     'role.delete' => 'Role deleted',
+    'task.create' => 'Task assigned',
+    'task.update' => 'Task updated',
+    'task.complete' => 'Task completed',
+    'task.reopen' => 'Task reopened',
+    'task.delete' => 'Task deleted',
 ];
+
+function pendingTaskCount(PDO $pdo, int $userId): int
+{
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE assigned_to = ? AND status = 'pending'");
+    $stmt->execute([$userId]);
+    return (int) $stmt->fetchColumn();
+}
+
+function taskPriorityBadge(string $priority): string
+{
+    $meta = PRIORITIES[$priority] ?? PRIORITIES['normal'];
+    return '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ' . $meta['class'] . '">' . e($meta['label']) . '</span>';
+}
 
 // --------------------------------------------------------------------- UI --
 
@@ -274,6 +298,7 @@ function navItems(): array
 {
     return [
         ['href' => 'index.php', 'label' => 'Home', 'feature' => 'dashboard'],
+        ['href' => 'tasks.php', 'label' => 'Tasks', 'feature' => 'tasks', 'badge' => true],
         ['href' => 'inventory.php', 'label' => 'Inventory', 'feature' => 'inventory'],
         ['href' => 'products.php', 'label' => 'Products', 'feature' => 'products'],
         ['href' => 'profit.php', 'label' => 'Profit', 'feature' => 'profit'],
@@ -294,3 +319,4 @@ const BTN_DANGER = 'inline-flex items-center gap-2 rounded-lg bg-red-50 px-3 py-
 const INPUT = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
 const LABEL = 'mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500';
 const CARD = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
+const CARD_HOVER = 'rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/60';

@@ -52,6 +52,16 @@ $agingProducts = $pdo->query(
 
 $toShipCount = $statusCounts['to_ship'] ?? 0;
 
+$myTasks = [];
+if (can('tasks', 'view')) {
+    $stmt = $pdo->prepare(
+        "SELECT * FROM tasks WHERE assigned_to = ? AND status = 'pending'
+         ORDER BY FIELD(priority, 'high', 'normal', 'low'), due_date IS NULL, due_date ASC LIMIT 6"
+    );
+    $stmt->execute([currentUser()['id']]);
+    $myTasks = $stmt->fetchAll();
+}
+
 $maxStatusCount = max([1, ...array_values($statusCounts)]);
 
 $pageTitle = 'Home';
@@ -71,27 +81,58 @@ require __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-  <div class="<?= CARD ?> p-5">
+  <div class="<?= CARD_HOVER ?> p-5">
     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Total products</p>
     <p class="mt-2 text-2xl font-bold text-slate-900"><?= $totalProducts ?></p>
     <p class="mt-1 text-xs text-slate-500"><?= (int) $inventory['count'] ?> currently in stock</p>
   </div>
-  <div class="<?= CARD ?> p-5">
+  <div class="<?= CARD_HOVER ?> p-5">
     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Inventory value</p>
     <p class="mt-2 text-2xl font-bold text-slate-900"><?= money($inventory['value']) ?></p>
     <p class="mt-1 text-xs text-slate-500">Cost of items not yet sold</p>
   </div>
-  <div class="<?= CARD ?> p-5">
+  <div class="<?= CARD_HOVER ?> p-5">
     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Profit this month</p>
     <p class="mt-2 text-2xl font-bold text-emerald-600"><?= money(($monthProfit['revenue'] ?? 0) - ($monthProfit['cost'] ?? 0)) ?></p>
     <p class="mt-1 text-xs text-slate-500"><?= money($monthProfit['revenue'] ?? 0) ?> revenue</p>
   </div>
-  <div class="<?= CARD ?> p-5">
+  <div class="<?= CARD_HOVER ?> p-5">
     <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Profit this year</p>
     <p class="mt-2 text-2xl font-bold text-amber-600"><?= money(($yearProfit['revenue'] ?? 0) - ($yearProfit['cost'] ?? 0)) ?></p>
     <p class="mt-1 text-xs text-slate-500"><?= money($yearProfit['revenue'] ?? 0) ?> revenue</p>
   </div>
 </div>
+
+<?php if (can('tasks', 'view')): ?>
+<div class="<?= CARD ?> mb-8 p-5">
+  <div class="mb-4 flex items-center justify-between">
+    <h2 class="text-sm font-semibold text-slate-900">Your open tasks</h2>
+    <a href="tasks.php" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">View all →</a>
+  </div>
+  <?php if (!$myTasks): ?>
+    <p class="text-sm text-slate-400">✓ All caught up — nothing pending.</p>
+  <?php else: ?>
+    <ul class="space-y-2">
+      <?php foreach ($myTasks as $t): $overdue = $t['due_date'] && $t['due_date'] < date('Y-m-d'); ?>
+        <li class="flex items-center justify-between rounded-lg px-3 py-2 transition-colors hover:bg-slate-50">
+          <div class="flex items-center gap-3">
+            <form method="post" action="tasks.php">
+              <input type="hidden" name="action" value="complete">
+              <input type="hidden" name="id" value="<?= (int) $t['id'] ?>">
+              <button type="submit" class="h-5 w-5 rounded-full border-2 border-slate-300 transition-colors hover:border-emerald-500" title="Mark done"></button>
+            </form>
+            <span class="text-sm font-medium text-slate-800"><?= e($t['title']) ?></span>
+            <?= taskPriorityBadge($t['priority']) ?>
+          </div>
+          <?php if ($t['due_date']): ?>
+            <span class="text-xs font-medium <?= $overdue ? 'text-red-600' : 'text-slate-400' ?>"><?= $overdue ? 'Overdue: ' : 'Due ' ?><?= fmtDate($t['due_date']) ?></span>
+          <?php endif; ?>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
   <div class="<?= CARD ?> p-5 lg:col-span-2">

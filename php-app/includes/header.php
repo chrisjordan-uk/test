@@ -4,6 +4,7 @@
  * Expects $pageTitle to be set before including this file.
  */
 $user = currentUser();
+$pendingTaskBadge = can('tasks', 'view') ? pendingTaskCount($pdo, $user['id']) : 0;
 ?>
 <!doctype html>
 <html lang="en">
@@ -41,13 +42,34 @@ $user = currentUser();
     padding-right:2.25rem; cursor:pointer;
   }
   select::-ms-expand{display:none;}
+
+  /* Small, tasteful motion: pages settle in instead of popping, flash
+     messages slide down, the notification dot breathes so it's noticed
+     without being annoying, and the logo mark gives a little life on hover. */
+  @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  main > div{animation:pageIn .35s cubic-bezier(.16,1,.3,1)}
+
+  @keyframes flashIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+  .flash-msg{animation:flashIn .3s ease-out}
+
+  @keyframes badgePulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{box-shadow:0 0 0 5px rgba(239,68,68,0)}}
+  .notif-dot{animation:badgePulse 2s ease-in-out infinite}
+
+  .logo-mark{transition:transform .25s ease}
+  .logo-mark:hover{transform:rotate(-6deg) scale(1.06)}
+
+  .nav-link{position:relative;overflow:hidden}
+  .nav-link::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#4b63f6;transform:scaleY(0);transition:transform .2s ease;border-radius:0 3px 3px 0}
+  .nav-link.active::before{transform:scaleY(1)}
+
+  tbody tr{transition:background-color .15s ease}
 </style>
 </head>
 <body class="text-slate-900">
 <div class="flex min-h-screen">
   <aside class="flex w-64 flex-col border-r border-slate-200 bg-white">
     <div class="flex items-center gap-2 px-6 py-5">
-      <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">🏷️</div>
+      <div class="logo-mark flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-white">🏷️</div>
       <div>
         <p class="text-sm font-semibold leading-tight text-slate-900">Vinted Resell</p>
         <p class="text-xs leading-tight text-slate-500">Business Manager</p>
@@ -58,8 +80,11 @@ $user = currentUser();
       <?php foreach (navItems() as $item): if (!can($item['feature'], 'view')) continue;
         $active = basename($_SERVER['PHP_SELF']) === $item['href']; ?>
         <a href="<?= e($item['href']) ?>"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors <?= $active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' ?>">
-          <?= e($item['label']) ?>
+           class="nav-link <?= $active ? 'active' : '' ?> flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors <?= $active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900' ?>">
+          <span><?= e($item['label']) ?></span>
+          <?php if (!empty($item['badge']) && $pendingTaskBadge > 0): ?>
+            <span class="notif-dot inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs font-semibold text-white"><?= $pendingTaskBadge ?></span>
+          <?php endif; ?>
         </a>
       <?php endforeach; ?>
     </nav>
@@ -82,8 +107,8 @@ $user = currentUser();
     <div class="mx-auto max-w-7xl px-6 py-8 lg:px-10">
       <?php $success = flash('success'); $error = flash('error'); ?>
       <?php if ($success): ?>
-        <div class="mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><?= e($success) ?></div>
+        <div class="flash-msg mb-6 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700"><?= e($success) ?></div>
       <?php endif; ?>
       <?php if ($error): ?>
-        <div class="mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600"><?= e($error) ?></div>
+        <div class="flash-msg mb-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600"><?= e($error) ?></div>
       <?php endif; ?>
