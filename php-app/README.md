@@ -60,6 +60,23 @@ from the Users page.
   average margin, average days to sell — computed straight from your sold
   products.
 
+## Using it as an iPhone app
+
+There's no separate app to build or install from the App Store — the site
+itself is set up to install like one:
+
+1. Open your live site in **Safari** on the iPhone (must be Safari, not
+   Chrome — only Safari can do this on iOS).
+2. Tap the **Share** button (square with an arrow) → **Add to Home Screen**.
+3. Give it a name (defaults to "Vinted Resell") → **Add**.
+
+You'll get an app icon on the home screen that opens full-screen, with no
+Safari address bar — it looks and feels like a normal app. It's still the
+same live website underneath (so it always shows current data and needs
+an internet connection), it's just launched without the browser chrome.
+This works because of the icons in `assets/icons/` and the tags in
+`includes/app_meta.php` — nothing further to configure.
+
 ## Notes
 
 - Auth uses PHP sessions (a login cookie) and `password_hash()` /
