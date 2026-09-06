@@ -77,6 +77,15 @@ from the Users page.
   added/edited/status-changed/deleted, every ledger entry, and every user
   or role change — who did it, exactly what changed, when, and from which
   IP address. Filterable by user and action type, paginated.
+- **Unlimited custom roles**: "+ Add role" on Users & Roles → Roles &
+  permissions lets you create as many roles as you like (e.g. a
+  "Photographer" who can only touch Products), each with its own
+  none/view/manage setting for every feature in the app. Roles can be
+  renamed, and deleted once no user has that role anymore.
+- **Per-user history**: open any user from Users & Roles → Users and their
+  edit page shows a live feed of everything tied to that account — every
+  sign-in, every change they made elsewhere in the app, and who
+  created/edited/changed the role on their account and when.
 
 ## Using it as an iPhone app
 

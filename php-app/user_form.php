@@ -16,6 +16,19 @@ if ($id) {
 
 $roles = $pdo->query('SELECT id, name FROM roles ORDER BY id')->fetchAll();
 
+$activity = [];
+if ($existing) {
+    // Everything this account did (logins, their own edits) plus anything
+    // done to the account itself (created, role changed, etc. by someone else).
+    $stmt = $pdo->prepare(
+        "SELECT * FROM activity_log
+         WHERE user_id = ? OR (entity_type = 'user' AND entity_id = ?)
+         ORDER BY created_at DESC, id DESC LIMIT 100"
+    );
+    $stmt->execute([$id, $id]);
+    $activity = $stmt->fetchAll();
+}
+
 $errors = [];
 $form = $existing ?: ['username' => '', 'full_name' => '', 'email' => '', 'role_id' => $roles[0]['id'] ?? '', 'is_active' => 1];
 
@@ -80,9 +93,12 @@ $pageTitle = $existing ? 'Edit user' : 'Add user';
 require __DIR__ . '/includes/header.php';
 ?>
 
-<div class="mb-6"><h1 class="text-2xl font-bold text-slate-900"><?= $existing ? 'Edit user' : 'Add user' ?></h1></div>
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-slate-900"><?= $existing ? 'Edit user: ' . e($existing['username']) : 'Add user' ?></h1>
+</div>
 
-<form method="post" class="<?= CARD ?> max-w-lg space-y-4 p-6">
+<div class="grid grid-cols-1 gap-6 <?= $existing ? 'lg:grid-cols-2' : '' ?>">
+<form method="post" class="<?= CARD ?> <?= $existing ? '' : 'max-w-lg' ?> space-y-4 p-6">
   <?php if ($errors): ?>
     <div class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
       <?php foreach ($errors as $err): ?><p><?= e($err) ?></p><?php endforeach; ?>
@@ -125,5 +141,47 @@ require __DIR__ . '/includes/header.php';
     <button type="submit" class="<?= BTN_PRIMARY ?>">Save</button>
   </div>
 </form>
+
+<?php if ($existing): ?>
+  <div class="<?= CARD ?> overflow-hidden">
+    <div class="border-b border-slate-100 px-5 py-4">
+      <h2 class="text-sm font-semibold text-slate-900">Activity for this user</h2>
+      <p class="mt-0.5 text-xs text-slate-500">Every sign-in and change made by (or affecting) this account.</p>
+    </div>
+    <div class="max-h-[32rem] overflow-y-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="sticky top-0 bg-slate-50">
+          <tr class="text-xs uppercase tracking-wide text-slate-500">
+            <th class="px-4 py-3">When</th>
+            <th class="px-4 py-3">Action</th>
+            <th class="px-4 py-3">Details</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <?php foreach ($activity as $entry): ?>
+            <tr class="hover:bg-slate-50">
+              <td class="px-4 py-3 whitespace-nowrap text-slate-500"><?= date('M j, Y H:i', strtotime($entry['created_at'])) ?></td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                  <?= e(ACTIVITY_LABELS[$entry['action']] ?? $entry['action']) ?>
+                </span>
+              </td>
+              <td class="px-4 py-3 text-slate-700"><?= e($entry['description']) ?></td>
+            </tr>
+          <?php endforeach; ?>
+          <?php if (!$activity): ?>
+            <tr><td colspan="3" class="px-4 py-10 text-center text-slate-400">No activity recorded for this user yet.</td></tr>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+    <?php if (count($activity) === 100): ?>
+      <div class="border-t border-slate-100 px-5 py-3 text-center">
+        <a href="users.php?tab=activity&user=<?= urlencode($existing['username']) ?>" class="text-sm font-medium text-indigo-600 hover:text-indigo-700">View full history →</a>
+      </div>
+    <?php endif; ?>
+  </div>
+<?php endif; ?>
+</div>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

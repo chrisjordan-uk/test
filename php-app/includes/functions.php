@@ -265,6 +265,7 @@ const ACTIVITY_LABELS = [
     'user.delete' => 'User deleted',
     'role.update' => 'Role permissions updated',
     'role.create' => 'Role created',
+    'role.delete' => 'Role deleted',
 ];
 
 // --------------------------------------------------------------------- UI --

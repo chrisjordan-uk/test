@@ -24,6 +24,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             flash('success', 'User deleted.');
         }
+    } elseif (($_POST['action'] ?? '') === 'delete_role') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $stmt = $pdo->prepare('SELECT name, (SELECT COUNT(*) FROM users WHERE role_id = roles.id) AS user_count FROM roles WHERE id = ?');
+        $stmt->execute([$id]);
+        $roleRow = $stmt->fetch();
+        if (!$roleRow) {
+            flash('error', 'Role not found.');
+        } elseif ($roleRow['user_count'] > 0) {
+            flash('error', "Can't delete \"{$roleRow['name']}\" — {$roleRow['user_count']} user(s) still have this role.");
+        } else {
+            $pdo->prepare('DELETE FROM roles WHERE id = ?')->execute([$id]);
+            logActivity($pdo, 'role.delete', "Deleted role \"{$roleRow['name']}\"", 'role', $id);
+            flash('success', 'Role deleted.');
+        }
     }
     redirect('users.php?tab=' . (in_array($_GET['tab'] ?? '', ['roles', 'activity'], true) ? $_GET['tab'] : 'users'));
 }
@@ -35,7 +49,10 @@ $users = $pdo->query(
      FROM users u JOIN roles r ON r.id = u.role_id ORDER BY u.username'
 )->fetchAll();
 
-$roles = $pdo->query('SELECT * FROM roles ORDER BY id')->fetchAll();
+$roles = $pdo->query(
+    'SELECT r.*, (SELECT COUNT(*) FROM users WHERE role_id = r.id) AS user_count
+     FROM roles r ORDER BY r.id'
+)->fetchAll();
 
 // ---- Activity log tab (admin-only oversight of who did what, when) ----
 $logEntries = [];
@@ -205,15 +222,32 @@ require __DIR__ . '/includes/header.php';
     </div>
   <?php endif; ?>
 <?php else: ?>
+  <?php if ($canManage): ?>
+    <div class="mb-4 flex justify-end">
+      <a href="role_form.php" class="<?= BTN_PRIMARY ?>">+ Add role</a>
+    </div>
+  <?php endif; ?>
   <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
     <?php foreach ($roles as $role): $perms = normalizePermissions($role['permissions']); ?>
       <div class="<?= CARD ?> p-5">
         <div class="mb-1 flex items-center justify-between">
           <h3 class="font-semibold text-slate-900"><?= e($role['name']) ?></h3>
           <?php if ($canManage): ?>
-            <a href="role_form.php?id=<?= (int) $role['id'] ?>" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">✎</a>
+            <div class="flex gap-1">
+              <a href="role_form.php?id=<?= (int) $role['id'] ?>" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700">✎</a>
+              <?php if ($role['user_count'] == 0): ?>
+                <form method="post" onsubmit="return confirm('Delete the &quot;<?= e($role['name']) ?>&quot; role?');" class="inline">
+                  <input type="hidden" name="action" value="delete_role">
+                  <input type="hidden" name="id" value="<?= (int) $role['id'] ?>">
+                  <button type="submit" class="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-600">🗑</button>
+                </form>
+              <?php else: ?>
+                <span class="rounded-lg p-1.5 text-slate-200" title="<?= (int) $role['user_count'] ?> user(s) have this role">🗑</span>
+              <?php endif; ?>
+            </div>
           <?php endif; ?>
         </div>
+        <p class="mb-1 text-xs text-slate-400"><?= (int) $role['user_count'] ?> user<?= $role['user_count'] == 1 ? '' : 's' ?></p>
         <p class="mb-4 text-xs text-slate-500"><?= e($role['description']) ?></p>
         <ul class="space-y-2">
           <?php foreach (FEATURES as $f): $level = $perms[$f];
