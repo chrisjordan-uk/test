@@ -131,4 +131,22 @@ CREATE TABLE IF NOT EXISTS tasks (
   INDEX idx_tasks_due (due_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- ---------------------------------------------------------------------------
+-- Notifications: a personal inbox. Currently populated by task events
+-- (assigned a task / your task was completed) but generic enough for more.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS notifications (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id     INT UNSIGNED NOT NULL,
+  type        VARCHAR(50) NOT NULL,
+  message     VARCHAR(255) NOT NULL,
+  link        VARCHAR(255) DEFAULT NULL,
+  is_read     TINYINT(1) NOT NULL DEFAULT 0,
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE,
+  INDEX idx_notifications_user_read (user_id, is_read),
+  INDEX idx_notifications_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 SET FOREIGN_KEY_CHECKS = 1;

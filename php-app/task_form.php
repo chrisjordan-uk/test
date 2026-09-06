@@ -14,7 +14,8 @@ if ($id) {
     }
 }
 
-$users = $pdo->query('SELECT id, username, full_name FROM users WHERE is_active = 1 ORDER BY username')->fetchAll();
+// Only offer people who can actually see the Tasks page as assignees.
+$users = usersWithFeature($pdo, 'tasks', 'view');
 
 $errors = [];
 $form = $task ?: [
@@ -48,23 +49,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
+        $assigneeName = '';
+        foreach ($users as $u) {
+            if ((int) $u['id'] === $form['assigned_to']) {
+                $assigneeName = $u['username'];
+            }
+        }
+
         if ($task) {
             $pdo->prepare('UPDATE tasks SET title = ?, description = ?, assigned_to = ?, priority = ?, due_date = ? WHERE id = ?')
                 ->execute([$form['title'], $form['description'] ?: null, $form['assigned_to'], $form['priority'], $form['due_date'], $id]);
             logActivity($pdo, 'task.update', "Updated task \"{$form['title']}\"", 'task', $id);
+
+            // Reassigned to someone new — let them know they've now got it.
+            if ($form['assigned_to'] !== (int) $task['assigned_to']) {
+                notify($pdo, $form['assigned_to'], 'task_assigned', "You were assigned: \"{$form['title']}\"", 'tasks.php');
+            }
             flash('success', 'Task updated.');
         } else {
             $pdo->prepare('INSERT INTO tasks (title, description, assigned_to, assigned_by, priority, due_date) VALUES (?, ?, ?, ?, ?, ?)')
                 ->execute([$form['title'], $form['description'] ?: null, $form['assigned_to'], currentUser()['id'], $form['priority'], $form['due_date']]);
             $newId = (int) $pdo->lastInsertId();
-            $assigneeName = '';
-            foreach ($users as $u) {
-                if ((int) $u['id'] === $form['assigned_to']) {
-                    $assigneeName = $u['username'];
-                }
-            }
+
             $forSelf = $form['assigned_to'] === currentUser()['id'] ? ' (for self)' : " (for $assigneeName)";
             logActivity($pdo, 'task.create', "Assigned task \"{$form['title']}\"$forSelf", 'task', $newId);
+            notify($pdo, $form['assigned_to'], 'task_assigned', "You were assigned: \"{$form['title']}\"", 'tasks.php');
             flash('success', 'Task assigned.');
         }
         redirect('tasks.php');

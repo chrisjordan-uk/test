@@ -13,6 +13,7 @@ db/database.sql      Import this once into your MySQL database
 db/seed.php           Visit this once in your browser to create the admin account
 index.php             Home / dashboard
 tasks.php + task_form.php          Assign and track to-dos, with a badge for what's pending
+notifications.php     Personal inbox: task assignments and completions
 inventory.php         Read-only product table with filters
 products.php + product_form.php    Add/edit products, change status
 bulk_status.php       Change many products' status at once by pasting numbers
@@ -29,10 +30,11 @@ includes/            Shared layout + helper functions
    note the database name, username and password it gives you.
 2. **Import the schema.** Open phpMyAdmin → select your database →
    **Import** tab → choose `db/database.sql` → Go. (Already set this up
-   before? Run each file in `db/migrations/` instead, in order — they only
-   add what's new without touching your data. Then re-visit `db/seed.php`
-   once — it's safe to run again and will add the new "Reports"/"Tasks"
-   permissions to your existing Admin/Manager/Staff roles.)
+   before? Run each file in `db/migrations/` instead, in date order — they
+   only add what's new without touching your data. Then re-visit
+   `db/seed.php` once — it's safe to run again and will add any new
+   permissions, like "Reports" or "Tasks", to your existing
+   Admin/Manager/Staff roles.)
 3. **Upload this whole `php-app` folder** to your hosting (as the contents
    of `public_html`, or a subfolder if you want the app at
    `yoursite.com/shop/`) via File Manager or FTP.
@@ -89,12 +91,20 @@ from the Users page.
   created/edited/changed the role on their account and when.
 - **Tasks**: anyone with `tasks: manage` (Admin/Manager by default) can
   assign a to-do — with a priority and an optional due date — to any user
-  or to themselves. Everyone with at least `tasks: view` gets a **Tasks**
-  page listing what's on their plate, a "Your open tasks" card on Home,
-  and a red counter on the Tasks link in the sidebar for what's still
-  pending — the notification that something needs doing. Ticking a task
-  off (or reopening it) is one click; managers also get an "Everyone's
-  tasks" view to see the whole team's workload at a glance.
+  who can see the Tasks page, or to themselves. Everyone with at least
+  `tasks: view` gets a **Tasks** page listing what's on their plate, a
+  "Your open tasks" card on Home, and a red counter on the Tasks link in
+  the sidebar for what's still pending. Ticking a task off (or reopening
+  it) is one click; managers also get an "Everyone's tasks" view to see
+  the whole team's workload at a glance.
+- **Notifications**: a proper inbox (its own **Notifications** page, with
+  a pulsing red counter in the sidebar), not just a task-count badge.
+  Assigning someone a task notifies them; when they mark it done, the
+  person who assigned it gets notified back — so nothing needs asking
+  "did you see that?" or "is this done yet?". Mark individual
+  notifications (or all of them) read, and clear read ones out of the
+  list once you've dealt with them. Nobody gets notified about their own
+  actions (e.g. assigning yourself a task doesn't ping you).
 
 ## Using it as an iPhone app
 

@@ -292,13 +292,53 @@ function taskPriorityBadge(string $priority): string
     return '<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ' . $meta['class'] . '">' . e($meta['label']) . '</span>';
 }
 
+/**
+ * Users whose role grants at least `$level` on `$feature` — e.g. only
+ * offering task assignment to people who can actually see the Tasks page.
+ * Filtered in PHP since permissions are stored as JSON text on the role.
+ */
+function usersWithFeature(PDO $pdo, string $feature, string $level = 'view'): array
+{
+    $rows = $pdo->query(
+        'SELECT u.id, u.username, u.full_name, r.permissions
+         FROM users u JOIN roles r ON r.id = u.role_id
+         WHERE u.is_active = 1 ORDER BY u.username'
+    )->fetchAll();
+
+    return array_values(array_filter($rows, function ($row) use ($feature, $level) {
+        $perms = normalizePermissions($row['permissions']);
+        return LEVEL_RANK[$perms[$feature]] >= LEVEL_RANK[$level];
+    }));
+}
+
+// ------------------------------------------------------------ notifications --
+
+/** Drop a notification in `$userId`'s inbox. Never notifies someone about their own action. */
+function notify(PDO $pdo, int $userId, string $type, string $message, ?string $link = null): void
+{
+    $actor = currentUser();
+    if ($actor && (int) $actor['id'] === $userId) {
+        return;
+    }
+    $pdo->prepare('INSERT INTO notifications (user_id, type, message, link) VALUES (?, ?, ?, ?)')
+        ->execute([$userId, $type, $message, $link]);
+}
+
+function unreadNotificationCount(PDO $pdo, int $userId): int
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0');
+    $stmt->execute([$userId]);
+    return (int) $stmt->fetchColumn();
+}
+
 // --------------------------------------------------------------------- UI --
 
 function navItems(): array
 {
     return [
         ['href' => 'index.php', 'label' => 'Home', 'feature' => 'dashboard'],
-        ['href' => 'tasks.php', 'label' => 'Tasks', 'feature' => 'tasks', 'badge' => true],
+        ['href' => 'notifications.php', 'label' => 'Notifications', 'feature' => null, 'badge' => 'notifications'],
+        ['href' => 'tasks.php', 'label' => 'Tasks', 'feature' => 'tasks', 'badge' => 'tasks'],
         ['href' => 'inventory.php', 'label' => 'Inventory', 'feature' => 'inventory'],
         ['href' => 'products.php', 'label' => 'Products', 'feature' => 'products'],
         ['href' => 'profit.php', 'label' => 'Profit', 'feature' => 'profit'],

@@ -19,6 +19,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($action === 'complete') {
             $pdo->prepare('UPDATE tasks SET status = "done", completed_at = NOW() WHERE id = ?')->execute([$id]);
             logActivity($pdo, 'task.complete', "Completed \"{$task['title']}\"", 'task', $id);
+            if ($task['assigned_by']) {
+                notify($pdo, (int) $task['assigned_by'], 'task_completed', "{$me['username']} completed: \"{$task['title']}\"", 'tasks.php?view=all&show=all');
+            }
             flash('success', 'Task marked done.');
         } else {
             $pdo->prepare('UPDATE tasks SET status = "pending", completed_at = NULL WHERE id = ?')->execute([$id]);
