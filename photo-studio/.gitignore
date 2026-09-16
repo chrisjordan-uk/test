@@ -1,0 +1,10 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.streamlit/secrets.toml
+sample_data/SAMPLE_OUTPUT_PREVIEW.zip
+*.egg-info/
+dist/
+build/
