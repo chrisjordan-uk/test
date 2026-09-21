@@ -108,7 +108,9 @@ every option in `.env.example`.
    └── ITEM_03/
        └── image1.png
    ```
-   JPG, JPEG, PNG and WEBP are all supported; filenames can be anything.
+   JPG, JPEG, PNG, WEBP and iPhone HEIC/HEIF photos are all supported (HEIC
+   is decoded automatically via `pillow-heif` — no need to convert them
+   first); filenames can be anything.
    `__MACOSX`, `.DS_Store` and other system junk are ignored automatically.
 2. **Preview** — expand each detected product folder to see its original
    photos, and uncheck any folder you don't want processed this run.
@@ -213,6 +215,7 @@ python sample_data/run_e2e_smoke_test.py
 | ZIP upload rejected as too large / too many folders | Raise `MAX_ZIP_SIZE_MB` / `MAX_PRODUCT_FOLDERS` / `MAX_TOTAL_IMAGES` in `.env`, or split the batch. |
 | A photo shows "kept original (safety)" | The AI edit didn't pass the preservation check — this is intentional, not a bug. The original photo is used instead. |
 | WEBP photos won't open | Make sure Pillow was installed with WEBP support (the pinned version in `requirements.txt` includes it by default). |
+| HEIC/HEIF (iPhone) photos won't open | Make sure `pillow-heif` installed correctly (`pip install -r requirements.txt`); it bundles its own HEIF decoder, no system libraries needed on Linux/Mac/Windows. |
 | App won't start / port already in use | Another Streamlit app may be running on port 8501. Stop it, or run `streamlit run app/main.py --server.port 8502`. |
 
 ## Project layout

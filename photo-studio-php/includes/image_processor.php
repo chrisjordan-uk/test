@@ -33,9 +33,73 @@ function jps_bg_rgb(string $style): array
     return JPS_BG_COLORS[$style] ?? JPS_BG_COLORS['neutral_studio'];
 }
 
+/**
+ * True if the file starts with an ISO-BMFF "ftyp" box carrying a
+ * HEIC/HEIF brand — the container iPhones save photos in by default.
+ * GD/getimagesize() don't recognise this container at all, so it needs
+ * its own detection ahead of the normal mime-based dispatch below.
+ */
+function jps_is_heic_signature(string $path): bool
+{
+    $handle = @fopen($path, 'rb');
+    if ($handle === false) {
+        return false;
+    }
+    $header = fread($handle, 12);
+    fclose($handle);
+    if ($header === false || strlen($header) < 12 || substr($header, 4, 4) !== 'ftyp') {
+        return false;
+    }
+    $brand = substr($header, 8, 4);
+    return in_array($brand, ['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'hevm', 'hevs', 'mif1', 'msf1'], true);
+}
+
+/**
+ * Best-effort HEIC/HEIF decode via the Imagick extension (only path GD
+ * itself has no HEIC support at all). Returns false when Imagick isn't
+ * installed, or isn't built with HEIF/libheif delegate support — very
+ * common on shared hosting, including most Hostinger plans — so callers
+ * must handle a false return gracefully rather than treat it as a bug.
+ */
+function jps_decode_heic_to_gd(string $path): \GdImage|false
+{
+    if (!class_exists('Imagick')) {
+        return false;
+    }
+    try {
+        $imagick = new \Imagick();
+        $imagick->readImage($path);
+        $imagick->autoOrient();
+        $imagick->setImageFormat('png');
+        $blob = $imagick->getImageBlob();
+        $imagick->clear();
+    } catch (\Throwable $e) {
+        return false;
+    }
+
+    $image = @imagecreatefromstring($blob);
+    if ($image === false || !($image instanceof \GdImage)) {
+        return false;
+    }
+
+    $w = imagesx($image);
+    $h = imagesy($image);
+    $flat = imagecreatetruecolor($w, $h);
+    $white = imagecolorallocate($flat, 255, 255, 255);
+    imagefilledrectangle($flat, 0, 0, $w, $h, $white);
+    imagealphablending($flat, true);
+    imagecopy($flat, $image, 0, 0, 0, 0, $w, $h);
+    imagedestroy($image);
+    return $flat;
+}
+
 /** Load an image file into a GD true-color resource, correcting JPEG EXIF rotation. */
 function jps_image_load(string $path): \GdImage|false
 {
+    if (jps_is_heic_signature($path)) {
+        return jps_decode_heic_to_gd($path);
+    }
+
     $info = @getimagesize($path);
     if ($info === false) {
         return false;

@@ -4,10 +4,13 @@ import io
 import zipfile
 from pathlib import Path
 
+import pillow_heif
 import pytest
 from PIL import Image, ImageDraw
 
 from app.config import Settings
+
+pillow_heif.register_heif_opener()
 
 
 def make_image_bytes(size=(400, 500), bg=(255, 255, 255), fmt="JPEG", draw_shape=True) -> bytes:
@@ -44,8 +47,9 @@ def test_settings(tmp_path) -> Settings:
 
 @pytest.fixture()
 def sample_zip_bytes() -> bytes:
-    """A realistic small upload ZIP: 4 products, mixed formats, junk files, and one
-    path-traversal attempt that must be neutralised on extraction."""
+    """A realistic small upload ZIP: 5 products, mixed formats (including an
+    iPhone-style HEIC photo), junk files, and one path-traversal attempt
+    that must be neutralised on extraction."""
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("ITEM_01/photo1.jpg", make_image_bytes(fmt="JPEG", bg=(250, 250, 250)))
@@ -58,6 +62,8 @@ def sample_zip_bytes() -> bytes:
         zf.writestr("ITEM_03/image1.png", make_image_bytes(fmt="PNG", bg=(240, 240, 240)))
 
         zf.writestr("ITEM_04/photo.webp", make_image_bytes(fmt="WEBP", bg=(255, 255, 255)))
+
+        zf.writestr("ITEM_05/IMG_0001.HEIC", make_image_bytes(fmt="HEIF", bg=(255, 255, 255)))
 
         # Junk that must be ignored.
         zf.writestr("__MACOSX/._photo1.jpg", b"not a real image")

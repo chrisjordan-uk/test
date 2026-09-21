@@ -85,6 +85,16 @@ function default_test_settings(array $overrides = []): array
     ], $overrides);
 }
 
+/**
+ * A minimal ISO-BMFF "ftyp" box with a HEIC brand — enough for the HEIC
+ * signature sniffer to recognise, without needing a real HEVC-encoded
+ * payload (which nothing in this pure-PHP test environment can produce).
+ */
+function make_fake_heic_bytes(): string
+{
+    return pack('N', 20) . 'ftyp' . 'heic' . pack('N', 0) . 'mif1';
+}
+
 function assert_true($cond, string $msg = ''): void
 {
     if (!$cond) {

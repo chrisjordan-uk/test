@@ -8,7 +8,10 @@ from __future__ import annotations
 import zipfile
 from pathlib import Path
 
+import pillow_heif
 from PIL import Image, ImageDraw
+
+pillow_heif.register_heif_opener()
 
 OUT_DIR = Path(__file__).resolve().parent
 OUT_ZIP = OUT_DIR / "STOCK_PHOTOS_SAMPLE.zip"
@@ -60,11 +63,22 @@ def main() -> None:
             ("ITEM_04", [
                 ("photo.webp", garment_photo((900, 1100), (255, 255, 255), (210, 180, 40), defect=True)),
             ]),
+            ("ITEM_05", [
+                # An iPhone-style HEIC photo, to demonstrate HEIC support.
+                ("IMG_0001.HEIC", garment_photo((900, 1200), (255, 255, 255), (90, 150, 120))),
+            ]),
         ]
 
         for folder, photos in items:
             for filename, img in photos:
-                fmt = "PNG" if filename.endswith(".png") else ("WEBP" if filename.endswith(".webp") else "JPEG")
+                if filename.endswith(".png"):
+                    fmt = "PNG"
+                elif filename.endswith(".webp"):
+                    fmt = "WEBP"
+                elif filename.upper().endswith(".HEIC"):
+                    fmt = "HEIF"
+                else:
+                    fmt = "JPEG"
                 import io
                 buf = io.BytesIO()
                 img.save(buf, format=fmt)

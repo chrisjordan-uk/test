@@ -37,7 +37,7 @@ define('DEFAULT_MAX_DIMENSION', jps_env_int('DEFAULT_MAX_DIMENSION', 1600));
 
 // --- App ---------------------------------------------------------------
 define('APP_NAME', 'Jordyn AI Photo Studio');
-define('SUPPORTED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'webp']);
+define('SUPPORTED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif']);
 define('IGNORED_NAMES', ['__MACOSX', '.DS_Store', 'Thumbs.db', 'desktop.ini']);
 define('STORAGE_DIR', __DIR__ . '/storage');
 

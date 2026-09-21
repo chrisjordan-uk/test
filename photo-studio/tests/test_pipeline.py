@@ -96,3 +96,19 @@ def test_selected_folders_filters_processing(tmp_path, sample_zip_path, test_set
 
     assert len(batch_report.product_reports) == 1
     assert batch_report.product_reports[0].folder_name == "ITEM_01"
+
+
+def test_heic_photo_is_decoded_and_processed(tmp_path, sample_zip_path, test_settings):
+    products = _extract_sample(tmp_path, sample_zip_path, test_settings)
+    settings = ProcessingSettings(use_gemini=False, use_local_enhancement=True, selected_folders=["ITEM_05"])
+    gemini_client = GeminiClient(settings=test_settings, cache_dir=tmp_path / "cache")
+
+    batch_report = process_batch(products, settings, test_settings, gemini_client, tmp_path / "enhanced")
+
+    assert batch_report.total_images == 1
+    assert batch_report.total_success == 1
+    assert batch_report.total_failure == 0
+
+    enhanced_dir = tmp_path / "enhanced" / "ITEM_05" / "ENHANCED_PHOTOS"
+    produced = list(enhanced_dir.glob("*_enhanced.jpg"))
+    assert len(produced) == 1

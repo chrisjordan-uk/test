@@ -105,6 +105,39 @@ Same five modes as the Python edition: **A** Clean Product Photo, **B**
 Background Cleanup, **C** Lighting & Quality Enhancement, **D** Marketplace
 Cover Image (4:5), **E** Batch Consistency.
 
+## 3a. iPhone HEIC/HEIF photos
+
+HEIC files are accepted at upload (they're recognised by their file
+signature, not just their extension), but **decoding one into a normal
+image depends entirely on your host's PHP having the `Imagick` extension
+built with HEIF/libheif support.** GD (the library this edition otherwise
+relies on for everything) has no HEIC support at all, and most shared
+hosting — including typical Hostinger shared/business plans — does **not**
+ship Imagick with the HEIF delegate enabled.
+
+What happens on a host without HEIC decoding: the app doesn't crash or
+stop the batch — it copies the original HEIC file through unchanged into
+`ENHANCED_PHOTOS`, marks that photo "failed", and the processing report
+explains exactly why plus what to do about it.
+
+Two reliable ways around this:
+1. **Set your iPhone to shoot JPEG instead of HEIC** — Settings → Camera →
+   Formats → "Most Compatible". New photos will already be JPEG, no
+   conversion needed.
+2. **Convert existing HEIC photos to JPEG before zipping them** — on
+   iPhone/Mac, "Share" → "Duplicate as JPEG" (Photos app), or any free
+   bulk HEIC→JPEG converter, before building your upload ZIP.
+
+If your host *does* have Imagick with HEIF support (check with
+`php -r "var_dump(class_exists('Imagick'));"` and ask your host if the
+HEIF delegate is enabled), HEIC photos are decoded automatically — no
+settings to change.
+
+Prefer not to worry about this at all? The **Python edition**
+(`../photo-studio/`) has full, reliable HEIC support out of the box via
+`pillow-heif`, independent of hosting — use that if HEIC support matters
+and you have somewhere to run it (a VPS or Node/Python-capable host).
+
 ## 4. Product-preservation policy
 
 Identical rule to the Python edition: **the AI must never make a garment
@@ -175,6 +208,7 @@ php -S localhost:8811
 | Processing seems to "hang" then finishes all at once | Normal on hosts that buffer output (e.g. some LiteSpeed configs) — the batch still completes, you just don't see the live log. |
 | A photo shows "kept original (safety)" | Intentional — the AI edit didn't pass the preservation check, so the original was used instead. |
 | WebP photos won't open | Confirm your host's GD build has WebP support: `php -r "print_r(gd_info());"` should show `WebP Support => 1`. |
+| HEIC/HEIF photo shows "could not be decoded" | Expected without Imagick+HEIF on your host — see section 3a. Convert to JPEG before uploading, or set your iPhone to Settings → Camera → Formats → "Most Compatible". |
 | 504/timeout on a large batch | Split into smaller ZIPs, or raise `max_execution_time` via `.user.ini` (see above). |
 
 ## Project layout

@@ -32,6 +32,15 @@ function jps_process_single_image(array $imageRecord, array $settings, string $e
         if (@copy($imageRecord['path'], $rawDest)) {
             $copiedName = $imageRecord['filename'];
         }
+
+        $error = 'Could not read image (unsupported or corrupt file); original file copied unchanged where possible.';
+        if (jps_is_heic_signature($imageRecord['path'])) {
+            $tip = 'Convert to JPEG before uploading, or set your iPhone to Settings > Camera > Formats > "Most Compatible".';
+            $error = class_exists('Imagick')
+                ? "This HEIC/HEIF photo could not be decoded (the server's ImageMagick build lacks HEIF support); original file copied unchanged. $tip"
+                : "This HEIC/HEIF photo could not be decoded (no HEIC decoder available on this server - the Imagick extension is not installed); original file copied unchanged. $tip";
+        }
+
         return [
             'filename' => $imageRecord['filename'],
             'success' => false,
@@ -40,7 +49,7 @@ function jps_process_single_image(array $imageRecord, array $settings, string $e
             'marked_unsafe' => false,
             'operations' => [],
             'warnings' => [],
-            'error' => 'Could not read image (unsupported or corrupt file); original file copied unchanged where possible.',
+            'error' => $error,
             'output_filename' => $copiedName,
             'similarity' => null,
         ];

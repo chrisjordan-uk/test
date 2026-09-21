@@ -63,7 +63,10 @@ jps_render_header($products ? 'settings' : 'upload');
   <div class="card">
     <h2>1. Upload your product photos</h2>
     <p>Upload a ZIP file containing one folder per product (each folder holding that product's photos).
-       JPG, JPEG, PNG and WEBP are supported; filenames can be anything.</p>
+       JPG, JPEG, PNG and WEBP are supported; filenames can be anything.
+       iPhone HEIC/HEIF photos are accepted too, but decoding them depends on
+       your host having ImageMagick with HEIF support — see the README if
+       they come back as "could not be decoded".</p>
     <form method="post" enctype="multipart/form-data">
       <input type="hidden" name="action" value="upload">
       <input type="hidden" name="csrf_token" value="<?= e(jps_csrf_token()) ?>">

@@ -16,11 +16,12 @@ def test_safe_extract_extracts_only_valid_images(tmp_path, sample_zip_path, test
     dest = tmp_path / "extracted"
     report = safe_extract_zip(sample_zip_path, dest, test_settings)
 
-    # 2 + 3 + 1 + 1 = 7 valid images
-    assert report.extracted_files == 7
+    # 2 + 3 + 1 + 1 + 1 = 8 valid images
+    assert report.extracted_files == 8
     assert (dest / "ITEM_01" / "photo1.jpg").exists()
     assert (dest / "ITEM_02" / "label.png").exists()
     assert (dest / "ITEM_04" / "photo.webp").exists()
+    assert (dest / "ITEM_05" / "IMG_0001.HEIC").exists()
 
 
 def test_path_traversal_is_neutralised(tmp_path, sample_zip_path, test_settings):
@@ -54,13 +55,14 @@ def test_detect_product_folders_groups_correctly(tmp_path, sample_zip_path, test
     products, warnings = detect_product_folders(dest, test_settings)
 
     names = sorted(p.name for p in products)
-    assert names == ["ITEM_01", "ITEM_02", "ITEM_03", "ITEM_04"]
+    assert names == ["ITEM_01", "ITEM_02", "ITEM_03", "ITEM_04", "ITEM_05"]
 
     by_name = {p.name: p for p in products}
     assert len(by_name["ITEM_01"].images) == 2
     assert len(by_name["ITEM_02"].images) == 3
     assert len(by_name["ITEM_03"].images) == 1
     assert len(by_name["ITEM_04"].images) == 1
+    assert len(by_name["ITEM_05"].images) == 1
 
 
 def test_validate_zip_bytes_rejects_oversized(test_settings):

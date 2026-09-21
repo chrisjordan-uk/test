@@ -18,9 +18,14 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
+import pillow_heif
 from PIL import Image, ImageOps
 
 from app.models import ASPECT_RATIO_VALUES, BACKGROUND_RGB, AspectRatio, BackgroundStyle, ProcessingMode, ProcessingSettings
+
+# Registers a Pillow plugin so Image.open() transparently reads iPhone
+# HEIC/HEIF photos — no separate code path needed anywhere else.
+pillow_heif.register_heif_opener()
 
 CORNER_SAMPLE_FRACTION = 0.06
 CORNER_UNIFORMITY_STD_THRESHOLD = 18.0
@@ -28,7 +33,7 @@ FLOOD_FILL_TOLERANCE = 22
 
 
 def load_image(path) -> Image.Image:
-    """Load an image, applying EXIF orientation, as RGB."""
+    """Load an image (JPEG/PNG/WEBP/HEIC/HEIF), applying EXIF orientation, as RGB."""
     img = Image.open(path)
     img = ImageOps.exif_transpose(img)
     if img.mode != "RGB":

@@ -122,7 +122,8 @@ def safe_extract_zip(zip_path: Path, dest_dir: Path, settings: Settings) -> Extr
 
     if report.extracted_files == 0:
         raise ZipValidationError(
-            "No supported image files were found in the ZIP (expected .jpg, .jpeg, .png or .webp "
+            "No supported image files were found in the ZIP (expected .jpg, .jpeg, .png, .webp, "
+            ".heic or .heif "
             "files inside product folders)."
         )
     return report
