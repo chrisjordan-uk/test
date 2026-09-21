@@ -11,6 +11,11 @@ and a processing report for every image.
 pricing, sales, invoicing, listings, or Vinted integrations — pair it with
 whatever system you already use for that.
 
+> **Deploying to shared hosting (Hostinger, cPanel, etc.) instead of a
+> VPS/Node-capable host?** Use the plain-PHP edition in
+> [`../photo-studio-php/`](../photo-studio-php/README.md) — no Python, no
+> build step, just upload the folder.
+
 ## What it does
 
 - Detects each product folder inside your uploaded ZIP automatically.

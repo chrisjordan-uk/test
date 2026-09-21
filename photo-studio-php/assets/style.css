@@ -1,0 +1,91 @@
+:root {
+  --primary: #7c5cff;
+  --primary-dark: #6144d1;
+  --bg: #f7f7fb;
+  --card: #ffffff;
+  --border: #e3e3ec;
+  --text: #22212b;
+  --muted: #6b6b7b;
+  --ok: #1a8a4c;
+  --warn: #b8860b;
+  --err: #c0392b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 0;
+}
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; }
+
+header.app-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+header.app-header h1 { font-size: 1.6rem; margin: 0; }
+.subtitle { color: var(--muted); margin: 0 0 24px; }
+
+.steps { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+.step-pill {
+  padding: 6px 14px; border-radius: 999px; background: var(--card); border: 1px solid var(--border);
+  font-size: 0.85rem; color: var(--muted);
+}
+.step-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+.step-pill.done { color: var(--ok); border-color: var(--ok); }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 24px; margin-bottom: 20px;
+}
+
+.card h2 { margin-top: 0; font-size: 1.15rem; }
+
+.flash { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.95rem; }
+.flash.error { background: #fdecea; color: var(--err); border: 1px solid #f5c6c1; }
+.flash.info { background: #eef1ff; color: var(--primary-dark); border: 1px solid #d7dcff; }
+.flash.warning { background: #fff8e6; color: var(--warn); border: 1px solid #ffe8a8; }
+
+.dropzone {
+  border: 2px dashed var(--border); border-radius: 12px; padding: 40px 20px; text-align: center;
+  color: var(--muted); background: #fbfbfe;
+}
+.dropzone input[type=file] { margin-top: 12px; }
+
+.btn {
+  display: inline-block; padding: 10px 20px; border-radius: 8px; border: none;
+  background: var(--primary); color: white; font-size: 0.95rem; cursor: pointer; text-decoration: none;
+}
+.btn:hover { background: var(--primary-dark); }
+.btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.folder-list { display: grid; gap: 12px; }
+.folder-card { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.folder-card summary { cursor: pointer; font-weight: 600; }
+.thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 12px; }
+.thumb-grid img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.thumb-grid figure { margin: 0; font-size: 0.75rem; color: var(--muted); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+@media (max-width: 720px) { .form-grid { grid-template-columns: 1fr; } }
+
+label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
+select, input[type=number], input[type=range] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); }
+
+.result-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-bottom: 1px solid var(--border); padding: 16px 0; }
+.result-row img { width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+.badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; }
+.badge.ok { background: #e5f7ec; color: var(--ok); }
+.badge.unsafe { background: #fff3d6; color: var(--warn); }
+.badge.fail { background: #fdecea; color: var(--err); }
+
+.metrics { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.metric { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 20px; min-width: 140px; }
+.metric .value { font-size: 1.6rem; font-weight: 700; }
+.metric .label { color: var(--muted); font-size: 0.8rem; }
+
+.log-box { background: #111; color: #d8d8e0; font-family: monospace; font-size: 0.8rem; border-radius: 8px; padding: 12px; max-height: 220px; overflow-y: auto; }
+
+footer.app-footer { color: var(--muted); font-size: 0.8rem; margin-top: 40px; text-align: center; }

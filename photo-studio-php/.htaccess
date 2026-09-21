@@ -1,0 +1,8 @@
+# Block direct access to sensitive files/folders.
+<FilesMatch "^\.env">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
